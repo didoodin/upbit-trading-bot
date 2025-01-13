@@ -12,16 +12,20 @@ const getCandle = async (req, res) => {
 
     try {
         let params = req.body;
-        let unit = "/" + params.minutes; 
+        let time = params.minutes;
+        let unit = "/" + time;
+        params.to = ""; 
         delete params.minutes;
         console.log("[UPBIT-TRADING-BOT][- CANDLE -] REQ-BODY : [", params,"]");
 
         // api call
         data = await call(api.minute.method, (api.route + api.minute.path + unit), params);
 
-        return data;
+        return res.json({ data });
     } catch (e) {
         console.error("[UPBIT-TRADING-BOT] ERROR :: ", e.message);
+
+        return res.json(e);
     } 
 };
 

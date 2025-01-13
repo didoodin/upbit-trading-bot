@@ -44,7 +44,7 @@ const getIndicator = async (req, res) => {
     }
 
     // RSI 결과를 응답으로 반환
-    return res.json({ data });
+    return data;
 }
 
 /**
