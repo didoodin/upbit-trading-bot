@@ -1,1 +1,1 @@
-# symmetrical-waddle
+# upbit-trading-bot
