@@ -42,6 +42,21 @@ module.exports = {
           path: "/bb",
           method: "GET"
         }
+      },
+      orders: {
+        route : "/orders",
+        chance: {
+          code: "OA-01",
+          desc: "주문 가능 정보",
+          path: "/chance",
+          method: "GET"
+        },
+        order: {
+          code: "OA-02",
+          desc: "주문",
+          path: "/",
+          method: "POST"
+        }
       }
     },
   }

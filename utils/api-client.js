@@ -14,6 +14,7 @@ async function call(method, endpoint, body = {}) {
     const queryString = new URLSearchParams(body).toString();
     let options = {};
     let data = {};
+    let remainReqCnt = "";
     
     // parameter check
     if (body) {
@@ -38,18 +39,28 @@ async function call(method, endpoint, body = {}) {
         method: method,
         url: url,
         headers: headers
-    }    
-    console.log("[UPBIT-TRADING-BOT][- API CALL -] REQ-BODY : [", body, "]");
-
-    // api call
-    try {
-        const response = await axios(options);
-        data = response.data;
-    } catch (error) {
-        console.error("[UPBIT-TRADING-BOT] API CONNECT ERROR :: CODE - [", error.code, "] || MESSAGE = [", error.response?.data || error.message, "]");
     }
 
-    return data;
+    console.log("[UPBIT-TRADING-BOT][- API CALL -] REQ-BODY : [", body, "]");
+
+    try {
+        const response = await axios(options);
+
+        // // 요청 가능 횟수 확보 위한 대기 시간
+        // let sleepTime = 0.3;
+        
+        // // 요청 가능 횟수
+        // remainReqCnt = response.headers['remaining-req'];
+        // console.log(remainReqCnt);
+
+        data = response.data;
+        console.log(response);
+
+        return data;
+    } catch (error) {
+        console.error("[UPBIT-TRADING-BOT] API CONNECT ERROR :: CODE - [", error.code, "] || MESSAGE = [", error.response?.data || error.message, "]");
+        return error;
+    }
 }
 
 module.exports = { call }
