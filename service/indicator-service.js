@@ -3,49 +3,82 @@ const _ = require('lodash');
 
 const { ROUTE } = require('../common/constants');
 const api = ROUTE.indicators;
-let code = "";
 
 const { getCandle } = require('../service/candle-service');
 
 /**
- * RSI
+ * 보조 지표 계산
  * @param {*} req 
  * @param {*} res 
  * @returns 
  */
 const getIndicator = async (req, res) => {
-    console.log("[UPBIT-TRADING-BOT][- INDICATOR -] GET INDICATOR START");
-    const path = req._parsedUrl.path;
-    let data = {};
+    console.info('[UPBIT-TRADING-BOT][-INDICATOR-] START');
+    // console.info('[UPBIT-TRADING-BOT][-INDICATOR-] REQ-BODY : ', req);
 
-    // 업비트 캔들 API 호출
-    let candle = await getCandle(req, res);
+    const path = req._parsedUrl && req._parsedUrl.path != null ? req._parsedUrl.path : '';
+    let code = '';
+    let rsi = '';
+    let bb = '';
 
-    if (!candle) {
-        console.error("[UPBIT-TRADING-BOT][- INDICATOR -] CANDLE DATA IS NULL");
-        return null;  // candle이 없으면 null 반환
-    }
+    // 캔들 API 호출
+    let candle = {};
 
-    switch (path) {
-        case api.rsi.path: // RSI
+    try {
+      if (path) {
+        console.info('[UPBIT-TRADING-BOT][-INDICATOR-] TYPE : [API]');
+
+        switch (path) {
+          case api.rsi.path:
             code = api.rsi.code;
-            console.error(`[UPBIT-TRADING-BOT][- INDICATOR -][${code}] MAKE RSI START`);
-            data = await makeRsi(candle);
-            console.error(`[UPBIT-TRADING-BOT][- INDICATOR -][${code}] RSI : ${data}`);
             break;
-        case api.bb.path: // BB
+          case api.bb.path:
             code = api.bb.code;
-            console.error(`[UPBIT-TRADING-BOT][- INDICATOR -][${code}] MAKE BB START`);
-            data = await makeBB(candle);
-            console.error(`[UPBIT-TRADING-BOT][- INDICATOR -][${code}] BB : ${data}`);
             break;
-        default:
-            throw new Error(`[UPBIT-TRADING-BOT][- INDICATOR -] ERROR`);
-    }
+        }
 
-    // RSI 결과를 응답으로 반환
-    return data;
-}
+        candle = await getCandle(req);
+
+        if (!candle) {
+          console.error('[UPBIT-TRADING-BOT][-INDICATOR-] CANDLE IS NULL');
+          return null;  // candle이 없으면 null 반환
+        }
+
+      } else {
+        console.info('[UPBIT-TRADING-BOT][-INDICATOR-] TYPE : [TRADE]');
+
+        code = req.filter(item => item.code).map(item => item.code)[0];
+        console.info(code);
+
+        candle = req.filter(item => !item.code); // code 속성이 없는 항목만 필터링
+        console.info(candle);
+
+        if (!candle) {
+          console.error('[UPBIT-TRADING-BOT][-INDICATOR-] CANDLE IS NULL');
+          return null;  // candle이 없으면 null 반환
+        } 
+      }
+
+      switch (code) {
+        case api.rsi.code: // RSI
+            console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][RSI][${code}] MAKE RSI START`);
+            rsi = await makeRsi(candle);
+            console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][RSI][${code}] RSI : ${rsi}`);
+            return rsi;
+        case api.bb.code: // BB
+            console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][BB][${code}] MAKE BB START`);
+            bb = await makeBB(candle);
+            console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][BB][${code}] ${bb}`);
+            return bb;
+        }
+
+      return { rsi: rsi, bb: bb };
+    } catch (e) {
+      console.error('[UPBIT-TRADING-BOT][-INDICATOR-] INDICATOR ERROR !!');
+      return e;
+    }
+  }
+
 
 /**
  * RSI 계산
@@ -110,7 +143,8 @@ async function makeRsi(candleList) {
       
           return rsi;
     } catch (e) {
-        console.error("[UPBIT-TRADING-BOT][- INDICATOR -] MAKE RSI ERROR !!");
+        console.error('[UPBIT-TRADING-BOT][- INDICATOR -] MAKE RSI ERROR !!');
+        return e;
     }
 }
 
@@ -154,7 +188,7 @@ async function makeBB(candleList) {
             const bandLow = bbCenter - band1;
 
             bbList.push({
-                type: "BB",
+                type: 'BB',
                 DT: dfDt[0],
                 BBH: Number(bandHigh.toFixed(4)), // 상단 밴드
                 BBM: Number(bbCenter.toFixed(4)), // 중간 밴드
@@ -164,8 +198,9 @@ async function makeBB(candleList) {
     
         return bbList;
     } catch (e) {
-        console.error("[UPBIT-TRADING-BOT][- INDICATOR -] MAKE BB ERROR !!");
+        console.error('[UPBIT-TRADING-BOT][- INDICATOR -] MAKE BB ERROR !!');
+        console.error(e);
     }
   }
 
-module.exports = { getIndicator };
+module.exports = { getIndicator, makeRsi, makeBB };

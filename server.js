@@ -24,9 +24,18 @@ express.use("/", require('./routes/ticker'));
 express.use(ROUTE.candles.route, require('./routes/candle'));
 express.use(ROUTE.indicators.route, require('./routes/indicator'));
 express.use(ROUTE.orders.route, require('./routes/order'));
+const { executeTrade } = require('../upbit-trading-bot/service/trade-service');
+
+// bot start
+function startBot() {
+  executeTrade();
+}
 
 express.listen(port, () => {
-  console.log(" ################################################## ");
-  console.log(` [UPBIT-TRADING-BOT] SERVER START || PORT : ${port} `);
-  console.log(" ################################################## ");
+  console.info(" ################################################## ");
+  console.info(` [UPBIT-TRADING-BOT] SERVER START || PORT : ${port} `);
+  console.info(" ################################################## ");
+
+  // 10초마다 startBot
+  setInterval(startBot, 3000);
 });

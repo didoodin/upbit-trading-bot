@@ -4,7 +4,6 @@ const router = express.Router();
 const controller = require('../controller/ticker-controller');
 
 const { ROUTE } = require('../common/constants');
-
 const api = ROUTE.ticker;
 
 // API route setting

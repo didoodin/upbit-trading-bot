@@ -1,20 +1,14 @@
-const { ROUTE } = require('../common/constants');
-const { call } = require('../utils/api-client');
-const api = ROUTE.asset;
-let code = "";
+const { getAccounts } = require('../service/account-service');
 
 // 전체 계좌 조회
-exports.accounts = async (req, res) => {
-    let data = {};
-    code = api.account.code;
-    console.log("[UPBIT-TRADING-BOT][", code, "] START");
-
+const accounts = async (req, res) => {
     try {
-        data = await call(api.account.method, api.account.path, null);
-        console.log("[UPBIT-TRADING-BOT][", code, "] RES-BODY : [", data, "]");
-
+        const data = await getAccounts(req, res); 
         return res.json(data);
     } catch (e) {
-        console.error("[UPBIT-TRADING-BOT] ERROR :: ", e.message);
+        console.error('[UPBIT-TRADING-BOT] ACCOUNT ERROR : ', e.message);
+        return res.json(e);
     }
 };
+
+module.exports = { accounts };
