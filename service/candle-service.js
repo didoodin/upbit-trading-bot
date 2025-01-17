@@ -12,13 +12,12 @@ let code = '';
  * @returns 
  */
 const getCandle = async (req, res) => {
-    let data = {};
-    code = api.minute.code;
     console.info('[UPBIT-TRADING-BOT][-CANDLE-] START');
+    code = api.minute.code;
+    let data = {};
+    let params = '';
 
     try {
-        let params = '';
-
         if (req) {
             if (req.body) {
                 params = req.body;
