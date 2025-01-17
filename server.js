@@ -5,6 +5,8 @@ const port = 3000;
 const morgan = require('morgan');
 const logger = require('./common/logger'); // Winston 로거 가져오기
 
+const { start } = require('../upbit-trading-bot/service/user-service');
+
 // json
 express.use(app.json());
 
@@ -24,18 +26,11 @@ express.use("/", require('./routes/ticker'));
 express.use(ROUTE.candles.route, require('./routes/candle'));
 express.use(ROUTE.indicators.route, require('./routes/indicator'));
 express.use(ROUTE.orders.route, require('./routes/order'));
-const { executeTrade } = require('../upbit-trading-bot/service/trade-service');
-
-// bot start
-function startBot() {
-  executeTrade();
-}
 
 express.listen(port, () => {
   console.info(" ################################################## ");
   console.info(` [UPBIT-TRADING-BOT] SERVER START || PORT : ${port} `);
   console.info(" ################################################## ");
 
-  // 10초마다 startBot
-  setInterval(startBot, 3000);
+  start();
 });

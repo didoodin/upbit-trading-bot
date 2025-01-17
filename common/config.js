@@ -1,12 +1,15 @@
-// .env
-require('dotenv').config();
+require('dotenv').config(); // .env
 
-const ACCESS_KEY = process.env.ACCESS_KEY;
-const SECRET_KEY = process.env.SECRET_KEY;
+const UPBIT_ACCESS_KEY = process.env.UPBIT_ACCESS_KEY;
+const UPBIT_SECRET_KEY = process.env.UPBIT_SECRET_KEY;
 
 // lib
 const axios = require('axios');
 
-module.exports = { axios, ACCESS_KEY, SECRET_KEY };
+// supabase
+const { createClient  } = require('@supabase/supabase-js');
+const supabase = createClient (process.env.DB_URL, process.env.DB_KEY);
+
+module.exports = { axios, supabase, UPBIT_ACCESS_KEY, UPBIT_SECRET_KEY };
 
 

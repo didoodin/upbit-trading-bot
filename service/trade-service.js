@@ -4,20 +4,32 @@ const { getCandle } = require('../service/candle-service');
 const { makeRsi, makeBB } = require('../service/indicator-service');
 const { checkSignal } = require('../service/signal-service');
 const { calculateOrderAmount, executeOrder } = require('../service/order-service');
+const { selectOrderRequestbyId } = require('../utils/supabase');
 
 const { ROUTE, API_CODE } = require('../common/constants');
-
-const MINUTE = 30;
 const COUNT = 200;
 
 const executeTrade = async (req, res) => {
-    const market = 'KRW-ETH'; // DB 연동 시 수정
+    const userId = req;
     let orderReqParam = {};
     let result = '';
 
     try {
-        // 캔들 조회
-        const candle = await getCandle({ minutes: MINUTE, market: market, count: COUNT });
+        // 사용자 주문 요청 정보 조회
+        let market = '';
+        let period = '';
+        let candle = {};
+
+        const orderRequest = await selectOrderRequestbyId(userId);
+        console.log(orderRequest)
+        
+        if (orderRequest) {
+            market = orderRequest.market;
+            period = orderRequest.period;
+
+            // 캔들 조회
+            candle = await getCandle({ minutes: period, market: market, count: COUNT });
+        }
 
         // RSI 계산
         console.info('[UPBIT-TRADING-BOT][-TRADE-] RSI CHECK');
@@ -80,7 +92,9 @@ const executeTrade = async (req, res) => {
 
         return result;
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-TRADE-] TRADE ERROR :: ', e);
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
+        const intervalManager = require('../utils/interval-manager');
+        intervalManager.stopInterval();
         return e;
     }
 }
