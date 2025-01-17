@@ -1,24 +1,14 @@
-const { ROUTE } = require('../common/constants');
-const { call } = require('../utils/api-client');
-const api = ROUTE.ticker;
-let code = "";
+const { getTicker } = require('../service/ticker-service');
 
 // 종목 단위 현재가 정보
-exports.ticker = async (req, res) => {
-    let data = {};
-    code = api.ableInfo.code;
-    console.log("[UPBIT-TRADING-BOT][", code, "] START");
-
+const ticker = async (req, res) => {
     try {
-        const params = req.body; 
-        console.log("[UPBIT-TRADING-BOT][", code, "] REQ-BODY : [", params,"]");
-
-        data = await call(api.ableInfo.method, api.ableInfo.path, params);
-        console.log("[UPBIT-TRADING-BOT][", code, "] RES-BODY : [", data, "]");
-
+        const data = await getTicker(req, res); 
         return res.json(data);
     } catch (e) {
-        console.error("[UPBIT-TRADING-BOT] ERROR :: ", e.message);
-    } 
-
+        console.error('[UPBIT-TRADING-BOT] TICKER ERROR :: ', e.message);
+        return res.status(500).json({ error: e.message });
+    }
 };
+
+module.exports = { ticker };

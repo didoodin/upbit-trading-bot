@@ -1,29 +1,40 @@
-const { ACCESS_KEY, SECRET_KEY, crypto, uuid, jwt } = require('../common/config');
-const querystring = require("querystring");
+const jwt = require("jsonwebtoken");
+const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
+const queryEncode = require("querystring").encode;
 
-const payload = {
-    access_key: ACCESS_KEY,
-    nonce: uuid
-  };
+const { ACCESS_KEY, SECRET_KEY } = require('../common/config');
 
-  function makeJwtToken(body) {
-    console.log("[UPBIT-TRADING-BOT][- JWT -] MAKE JWT TOKEN");
+  function makeJwtToken(req) {
+    // console.info('[UPBIT-TRADING-BOT][-JWT-] MAKE JWT TOKEN');
+    // console.info('[UPBIT-TRADING-BOT][-JWT-] REQ-BODY : ', req);
 
-    if (body) {
-      console.log("[UPBIT-TRADING-BOT][- JWT -]  MAKE QUERYSTRING START");
-      const query = querystring.stringify(body);
+    let payload = {};
+    let queryHash = "";
+    let authToken = "";
+    let jwtToken = "";
+
+    try {
+        // console.info('[UPBIT-TRADING-BOT][- JWT -]  MAKE QUERYSTRING START');
+        const query = queryEncode(req);
+        const hash = crypto.createHash('sha512');
+        queryHash = hash.update(query, 'utf-8').digest('hex');
+
+        payload = {
+          access_key: ACCESS_KEY,
+          nonce: uuidv4(),
+          query_hash: queryHash,
+          query_hash_alg: 'SHA512',
+        };
     
-      const hash = crypto.createHash('sha512');
-      const queryHash = hash.update(query, 'utf-8').digest('hex');
-    
-      payload.query_hash = queryHash;
-      payload.query_hash_alg = 'SHA512';
-    } 
+        jwtToken = jwt.sign(payload, SECRET_KEY);
+        authToken = `Bearer ${jwtToken}`;
 
-    const jwtToken = jwt.sign(payload, SECRET_KEY);
-    const authToken = `Bearer ${jwtToken}`;
-
-    return authToken;
+      return authToken;
+    } catch (e) {
+      console.error('[UPBIT-TRADING-BOT][-JWT-] ERROR : ', e);
+      return e;
+    }
   }
 
   module.exports = {

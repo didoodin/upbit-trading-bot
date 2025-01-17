@@ -4,23 +4,24 @@ exports.orders = async (req, res) => {
     let params = {};
     let data = {};
     let reqInfo = {};
-    let code = "";
+    let code = '';
 
-    // 요청 데이터 세팅
+    // 주문 요청 데이터 세팅
     if (req != null) {
-        reqInfo = await setOrderReqInfo(req);    
+        reqInfo = setOrderReqInfo(req);    
         code = reqInfo.code;
         params = req.body;
     }
 
     try {
-        console.log("[UPBIT-TRADING-BOT][", code, "] REQ-BODY : [", params,"]");
+        console.info('[UPBIT-TRADING-BOT][', code, '] REQ-BODY : [', params,']');
         
-        data = await executeOrder(reqInfo);
+        data = executeOrder(reqInfo);
 
-        console.log("[UPBIT-TRADING-BOT][", code, "] RES-BODY : [", data, "]");
+        console.info('[UPBIT-TRADING-BOT][', code, '] RES-BODY : [', data, ']');
         return res.json(data);
     } catch (e) {
-        console.error("[UPBIT-TRADING-BOT][", code, "] ERROR :: ", e.message);
+        console.error('[UPBIT-TRADING-BOT][', code, '] ERROR :: ', e.message);
+        return res.json(e);
     } 
 };
