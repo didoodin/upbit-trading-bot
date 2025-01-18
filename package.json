@@ -10,6 +10,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "bin": "server.js",
   "dependencies": {
     "@supabase/supabase-js": "^2.47.16",
     "axios": "^1.7.9",

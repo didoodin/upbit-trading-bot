@@ -1,5 +1,5 @@
-const math = require('mathjs');
 const _ = require('lodash');
+const math = require('mathjs');
 
 const { ROUTE } = require('../common/constants');
 const api = ROUTE.indicators;
@@ -48,10 +48,7 @@ const getIndicator = async (req, res) => {
         console.info('[UPBIT-TRADING-BOT][-INDICATOR-] TYPE : [TRADE]');
 
         code = req.filter(item => item.code).map(item => item.code)[0];
-        console.info(code);
-
         candle = req.filter(item => !item.code); // code 속성이 없는 항목만 필터링
-        console.info(candle);
 
         if (!candle) {
           console.error('[UPBIT-TRADING-BOT][-INDICATOR-] CANDLE IS NULL');
@@ -78,7 +75,6 @@ const getIndicator = async (req, res) => {
       return e;
     }
   }
-
 
 /**
  * RSI 계산

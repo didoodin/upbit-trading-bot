@@ -6,7 +6,7 @@ const ticker = async (req, res) => {
         const data = await getTicker(req, res); 
         return res.json(data);
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT] TICKER ERROR :: ', e.message);
+        console.error('[UPBIT-TRADING-BOT] TICKER ERROR : ', e.message);
         return res.status(500).json({ error: e.message });
     }
 };

@@ -1,4 +1,4 @@
-const { supabase } = require('../common/config');
+const { supabase } = require('../common/env-config');
 
 /**
  * 사용자 조회
@@ -69,4 +69,28 @@ const selectOrderRequestbyId = async (req, res) => {
     return data;
 };
 
-module.exports = { selectUserById, selectOrderRequestbyId, updateLoginDtById }
+/**
+ * 공통 환경설정 조회
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+const selectCommonConfig = async (req, res) => {
+    const configKey = req;
+  
+    const { data, error } = await supabase
+      .from('tb_common_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .eq('use_yn', 'Y')
+      .single();
+  
+      if (error) {
+        console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+        return null;
+      }
+      
+      return data.config_value;
+};
+
+module.exports = { selectUserById, updateLoginDtById, selectOrderRequestbyId, selectCommonConfig };

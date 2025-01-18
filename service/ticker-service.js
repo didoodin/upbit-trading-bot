@@ -23,7 +23,7 @@ const getTicker = async (req, res) => {
         console.info('[UPBIT-TRADING-BOT][', code, '] RES-BODY : [', data, ']');
         return data;
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT] ERROR :: ', e.message);
+        console.error('[UPBIT-TRADING-BOT] ERROR : ', e.message);
         return e;
     } 
 };
