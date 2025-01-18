@@ -1,6 +1,5 @@
-const RSI_BUY = 30;  // 매수 RSI 임계값
-const RSI_SELL = 70; // 매도 RSI 임계값
-const DISTANCE = 5;  // 밴드와의 거리 임계값
+const { API_CODE } = require('../common/constants');
+const supabase = require('../utils/supabase');
 
 const checkSignal = async (req, res) => {
     const { currentPrice, rsi, bb } = req;
@@ -20,12 +19,16 @@ const calculateDistance = (price1, price2) => {
 
 // 신호 결정
 const determineSignal = (rsi, upperDistance, lowerDistance) => {
-    if (rsi < RSI_BUY && lowerDistance <= DISTANCE) {
+    // RSI 임계값 조회
+    const buy = supabase.selectCommonConfig(API_CODE.RSI_BUY);
+    const sell = supabase.selectCommonConfig(API_CODE.RSI_SELL);
+
+    if (rsi < buy && lowerDistance <= API_CODE.DISTANCE) {
         console.info('[UPBIT-TRADING-BOT] BUY SIGNAL !!');
         return 1; // 매수 신호
     }
 
-    if (rsi > RSI_SELL && upperDistance <= DISTANCE) {
+    if (rsi > sell && upperDistance <= API_CODE.DISTANCE) {
         console.info('[UPBIT-TRADING-BOT] SELL SIGNAL !!');
         return -1; // 매도 신호
     }

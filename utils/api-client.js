@@ -1,6 +1,6 @@
 const { DOMAIN } = require('../common/constants');
-const { makeJwtToken } = require('./jwt');
 const { axios } = require('../common/config');
+const { makeJwtToken } = require('./jwt');
 
 /**
  * upbit open api call
@@ -58,7 +58,7 @@ async function call(method, endpoint, body = {}) {
             
             // 요청 가능 횟수
             let remainReqCnt = response.headers['remaining-req'];
-            console.info(remainReqCnt);
+            console.debug(remainReqCnt);
 
             // 정규 표현식을 사용하여 sec 값을 추출
             const match = remainReqCnt.match(/sec=(\d+)/);

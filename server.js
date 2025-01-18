@@ -21,8 +21,8 @@ express.use(
 
 // router
 const { ROUTE } = require('./common/constants');
-express.use(ROUTE.asset.route, require('./routes/asset'));
 express.use("/", require('./routes/ticker'));
+express.use(ROUTE.asset.route, require('./routes/asset'));
 express.use(ROUTE.candles.route, require('./routes/candle'));
 express.use(ROUTE.indicators.route, require('./routes/indicator'));
 express.use(ROUTE.orders.route, require('./routes/order'));

@@ -1,5 +1,5 @@
 const readline = require('readline');
-const { selectUserById } = require('../utils/supabase');
+const supabase = require('../utils/supabase');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -12,8 +12,8 @@ async function start() {
         const userId = await getInputId();
 
         // 사용자 조회
-        const isUser = await selectUserById(userId);
-        
+        const isUser = await supabase.selectUserById(userId);
+
         if (!isUser) {
             console.error("[UPBIT-TRADING-BOT] NOT USER ->> STOP BOT");
             require('../utils/interval-manager').stopInterval();

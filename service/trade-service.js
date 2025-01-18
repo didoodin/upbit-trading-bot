@@ -4,7 +4,7 @@ const { getCandle } = require('../service/candle-service');
 const { makeRsi, makeBB } = require('../service/indicator-service');
 const { checkSignal } = require('../service/signal-service');
 const { calculateVolume, executeOrder } = require('../service/order-service');
-const { selectOrderRequestbyId } = require('../utils/supabase');
+const supabase = require('../utils/supabase');
 
 const { ROUTE, API_CODE } = require('../common/constants');
 const COUNT = 200;
@@ -21,7 +21,7 @@ const executeTrade = async (req, res) => {
         let candle = {};
 
         // 사용자 주문 요청 정보 조회
-        const orderRequest = await selectOrderRequestbyId(userId);
+        const orderRequest = await supabase.selectOrderRequestbyId(userId);
         
         if (orderRequest) {
             market = KRW + '-' + orderRequest.market;

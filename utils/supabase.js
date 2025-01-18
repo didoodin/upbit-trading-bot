@@ -6,7 +6,7 @@ const { supabase } = require('../common/config');
  * @param {*} res 
  * @returns 
  */
-const selectUserById = async (req, res) => {
+module.exports.selectUserById = async (req, res) => {
     const userId = req;
   
     const { data, error } = await supabase
@@ -30,7 +30,7 @@ const selectUserById = async (req, res) => {
  * @param {*} res 
  * @returns 
  */
-const updateLoginDtById = async (req, res) => {
+module.exports.updateLoginDtById = async (req, res) => {
     const userId = req;
 
     const { data, error } = await supabase
@@ -52,7 +52,7 @@ const updateLoginDtById = async (req, res) => {
  * @param {*} res 
  * @returns 
  */
-const selectOrderRequestbyId = async (req, res) => {
+module.exports.selectOrderRequestbyId = async (req, res) => {
     const userId = req;
 
     const { data, error } = await supabase
@@ -69,4 +69,26 @@ const selectOrderRequestbyId = async (req, res) => {
     return data;
 };
 
-module.exports = { selectUserById, selectOrderRequestbyId, updateLoginDtById }
+/**
+ * 공통 환경설정 조회
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+module.exports.selectCommonConfig = async (req, res) => {
+    const configKey = req;
+  
+    const { data, error } = await supabase
+      .from('tb_common_config')
+      .select('config_value')
+      .eq('config_key', configKey)
+      .eq('use_yn', 'Y')
+      .single();
+  
+      if (error) {
+        console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+        return null;
+      }
+      
+      return data;
+};

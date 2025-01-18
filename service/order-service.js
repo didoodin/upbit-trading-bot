@@ -1,11 +1,9 @@
-const _ = require('lodash');
-const { call } = require('../utils/api-client');
-
 const { ROUTE, API_CODE } = require('../common/constants');
 const api = ROUTE.orders;
 let reqInfo = {};
 
 const setOrderReqInfo = async (req, res) => {
+    const _ = require('lodash');
     let path = req._parsedUrl.path;
     reqInfo = {};
 
@@ -44,6 +42,7 @@ const setOrderReqInfo = async (req, res) => {
 const executeOrder = async (req, res) => {
     console.info('[UPBIT-TRADING-BOT][-ORDER-] START');
     console.info('[UPBIT-TRADING-BOT][-ORDER-] REQ-BODY : ', req);
+    const { call } = require('../utils/api-client');
     let data = {};
 
     try {
@@ -51,7 +50,7 @@ const executeOrder = async (req, res) => {
 
         return data;
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT] ERROR :: ', e.code);
+        console.error('[UPBIT-TRADING-BOT] ERROR : ', e.code);
         return e;
     } 
 };
@@ -62,54 +61,58 @@ const executeOrder = async (req, res) => {
  * @returns 
  */
 const calculateVolume = async (req, res) => { // accountBalance, entryPrice
-    const side = req.side;
-    const accountBalance = req.accountBalance;
-    const entryPrice = req.entryPrice;
-    
+    // 계좌 대비 리스크 허용 비율 조회
+    const supabase = require('../utils/supabase');
+    const riskPercentage = supabase.selectCommonConfig(API_CODE.RISK_RATE);
+
     const stopLossPercentage = 0.05;  // 손절가 계산 비율 (5%)
-    const riskPercentage = 0.02;      // 계좌 대비 리스크 허용 비율 (2%)
-    const maxAllocation = 0.1;        // 계좌 대비 최대 매수 금액 비율 (20%)
+    const maxAllocation = 0.5;        // 계좌 대비 최대 매수 금액 비율 (20%)
     const minOrderPrice = 5000;      // 최소 주문 금액
     const minOrderSize = 0.0001;      // 최소 주문 단위
     const feeRate = 0.05;            // 거래소 수수료 비율 (0.05%)
+
+    const side = req.side;
+    const accountBalance = req.accountBalance;
+    const entryPrice = req.entryPrice;
+
     let orderQuantity;
   
     try {
         // 1. 손절가 자동 계산
         const stopLossPrice = entryPrice * (1 - stopLossPercentage);
-        console.info(stopLossPrice);
+        console.debug(stopLossPrice);
 
         // 2. 최대 손실 허용 금액 계산
         const maxLossAmount = accountBalance * riskPercentage;
-        console.info(maxLossAmount);
+        console.debug(maxLossAmount);
     
         // 3. 최대 매수 금액 계산
         const maxBuyAmount = accountBalance * maxAllocation;
-        console.info(maxBuyAmount);
+        console.debug(maxBuyAmount);
     
         // 4. 리스크 기준 주문 수량 계산
         const quantityBasedOnRisk = maxLossAmount / (entryPrice - stopLossPrice);
-        console.info(quantityBasedOnRisk);
+        console.debug(quantityBasedOnRisk);
     
         // 5. 최대 매수 금액 기준 주문 수량 계산
         const quantityBasedOnAllocation = maxBuyAmount / entryPrice;
-        console.info(quantityBasedOnAllocation);
+        console.debug(quantityBasedOnAllocation);
     
         // 6. 최소값으로 주문 수량 제한
         orderQuantity = Math.min(quantityBasedOnRisk, quantityBasedOnAllocation);
-        console.info(orderQuantity);
+        console.debug(orderQuantity);
     
         // 7. 수수료 반영
         orderQuantity *= (1 - feeRate);
-        console.info(orderQuantity);
+        console.debug(orderQuantity);
     
         // 8. 최소 주문 단위로 반올림
         orderQuantity = Math.floor(orderQuantity / minOrderSize) * minOrderSize;
-        console.info(orderQuantity);
+        console.debug(orderQuantity);
     
         // 9. 최소 주문 금액 검증
         const orderPrice = Math.round(orderQuantity * entryPrice); // 주문 금액
-        console.info(orderPrice);
+        console.debug(orderPrice);
         
         if (orderPrice < minOrderPrice) {
             console.error('[UPBIT-TRADING-BOT][VOLUME] BALANCE IS BELOW THE MIN ORDER AMOUT');
