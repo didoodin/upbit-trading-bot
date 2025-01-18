@@ -1,5 +1,5 @@
 const RSI_BUY = 30;  // 매수 RSI 임계값
-const RSI_SELL = 65; // 매도 RSI 임계값
+const RSI_SELL = 70; // 매도 RSI 임계값
 const DISTANCE = 5;  // 밴드와의 거리 임계값
 
 const checkSignal = async (req, res) => {

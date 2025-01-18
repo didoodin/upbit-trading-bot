@@ -60,7 +60,7 @@ module.exports = {
       }
     },
     API_CODE : {
-      BID : 'bid', // 매수
-      ASK : 'ask' // 매도
+      BUY : 'bid', // 매수
+      SELL : 'ask' // 매도
     }
   }

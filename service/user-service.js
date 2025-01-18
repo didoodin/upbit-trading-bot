@@ -1,6 +1,5 @@
 const readline = require('readline');
 const { selectUserById } = require('../utils/supabase');
-const { startInterval } = require('../utils/interval-manager');
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -13,10 +12,15 @@ async function start() {
         const userId = await getInputId();
 
         // 사용자 조회
-        await selectUserById(userId);
+        const isUser = await selectUserById(userId);
+        
+        if (!isUser) {
+            console.error("[UPBIT-TRADING-BOT] NOT USER ->> STOP BOT");
+            require('../utils/interval-manager').stopInterval();
+        }
 
         // 봇 실행
-        startInterval(userId);
+        require('../utils/interval-manager').startInterval(userId);
       } catch (e) {
         console.error("[UPBIT-TRADING-BOT] START ERROR : ", e);
       }

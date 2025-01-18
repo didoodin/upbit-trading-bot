@@ -1,7 +1,7 @@
 const _ = require('lodash');
 const { call } = require('../utils/api-client');
 
-const { ROUTE } = require('../common/constants');
+const { ROUTE, API_CODE } = require('../common/constants');
 const api = ROUTE.orders;
 let reqInfo = {};
 
@@ -61,15 +61,15 @@ const executeOrder = async (req, res) => {
  * @param {*} param0 
  * @returns 
  */
-const calculateOrderAmount = async (req, res) => { // accountBalance, entryPrice
+const calculateVolume = async (req, res) => { // accountBalance, entryPrice
     const side = req.side;
     const accountBalance = req.accountBalance;
     const entryPrice = req.entryPrice;
     
     const stopLossPercentage = 0.05;  // 손절가 계산 비율 (5%)
     const riskPercentage = 0.02;      // 계좌 대비 리스크 허용 비율 (2%)
-    const maxAllocation = 0.2;        // 계좌 대비 최대 매수 금액 비율 (20%)
-    const minOrderAmount = 5000;      // 최소 주문 금액
+    const maxAllocation = 0.1;        // 계좌 대비 최대 매수 금액 비율 (20%)
+    const minOrderPrice = 5000;      // 최소 주문 금액
     const minOrderSize = 0.0001;      // 최소 주문 단위
     const feeRate = 0.05;            // 거래소 수수료 비율 (0.05%)
     let orderQuantity;
@@ -111,24 +111,20 @@ const calculateOrderAmount = async (req, res) => { // accountBalance, entryPrice
         const orderPrice = Math.round(orderQuantity * entryPrice); // 주문 금액
         console.info(orderPrice);
         
-        if (orderPrice < minOrderAmount) {
-            console.error('[UPBIT-TRADING-BOT][VOLUME] ORDER AMOUNT DOES NOT MEET THE MINIMUM ORDER AMOUNT.');
+        if (orderPrice < minOrderPrice) {
+            console.error('[UPBIT-TRADING-BOT][VOLUME] BALANCE IS BELOW THE MIN ORDER AMOUT');
             return 0; // 주문 불가능
-        } else {
-            
-        }
+        } 
 
-        if (side === 'bid') {
+        if (side === API_CODE.BUY) {
             return orderPrice;
-        } else if (side === 'ask') {
-
+        } else if (side === API_CODE.SELL) {
+            return orderQuantity;
         }
     } catch (e) {
         console.error('[UPBIT-TRADING-BOT][VOLUME] ERROR : ', e);
         return e;
     }
-  
-    return orderQuantity;
   }
 
-module.exports = { setOrderReqInfo, calculateOrderAmount, executeOrder };
+module.exports = { setOrderReqInfo, calculateVolume, executeOrder };

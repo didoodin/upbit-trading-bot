@@ -3,28 +3,28 @@ const { getTicker } = require('../service/ticker-service');
 const { getCandle } = require('../service/candle-service');
 const { makeRsi, makeBB } = require('../service/indicator-service');
 const { checkSignal } = require('../service/signal-service');
-const { calculateOrderAmount, executeOrder } = require('../service/order-service');
+const { calculateVolume, executeOrder } = require('../service/order-service');
 const { selectOrderRequestbyId } = require('../utils/supabase');
 
 const { ROUTE, API_CODE } = require('../common/constants');
 const COUNT = 200;
+const KRW = 'KRW';
 
 const executeTrade = async (req, res) => {
     const userId = req;
-    let orderReqParam = {};
+    let reqParam = {};
     let result = '';
 
     try {
-        // 사용자 주문 요청 정보 조회
         let market = '';
         let period = '';
         let candle = {};
 
+        // 사용자 주문 요청 정보 조회
         const orderRequest = await selectOrderRequestbyId(userId);
-        console.log(orderRequest)
         
         if (orderRequest) {
-            market = orderRequest.market;
+            market = KRW + '-' + orderRequest.market;
             period = orderRequest.period;
 
             // 캔들 조회
@@ -50,51 +50,56 @@ const executeTrade = async (req, res) => {
 
         // 신호 체크
         const signal = await checkSignal({ currentPrice : currentPrice, rsi : rsi, bb : bb });
-        console.info('[UPBIT-TRADING-BOT][-TRADE-] SIGNAL :: ', signal);
+        console.info('[UPBIT-TRADING-BOT][-TRADE-] SIGNAL : ', signal);
 
         if (signal != 0) {
             console.info('[UPBIT-TRADING-BOT][-TRADE-] ORDER INFO SETTING START !!');
-            let side = '';
+            const side = signal > 0 ? API_CODE.BUY : API_CODE.SELL;
 
             // 계좌 조회
             let accountInfo = await getAccounts({});
 
             if (signal > 0) { // 매수
-                side = API_CODE.SID;
+                const balance = accountInfo.find(item => item.currency === KRW)?.balance;
+                console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] BALANCE : ', balance);
 
                 // 주문 금액 계산
-                price = await calculateOrderAmount({ side : side, accountBalance : balance, entryPrice : currentPrice });
-                console.info('[UPBIT-TRADING-BOT][-TRADE-] BUY PRICE : ', price);
+                price = await calculateVolume({ side : side, accountBalance : balance, entryPrice : currentPrice });
+                console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] BUY PRICE : ', price);
 
-                if (price > 0) { // 최소 주문 금액 이하 시 0이 리턴
-                    orderReqParam = {
+                if (price !== 0) { // 최소 주문 금액 이하 시 0이 리턴
+                    reqParam = {
                         market : market,
                         side : side,
                         price : price.toString(),
                         ord_type : 'price' // 시장가 주문(매수)
                     }
+                
+                    result = await executeOrder(reqParam); // 매수
+                } else {
                 }
             } else if (signal < 0) { // 매도
-                side = API_CODE.ASK;
-                const volume = accountInfo.find(item => item.currency === 'ETH')?.balance;
-                console.info('[UPBIT-TRADING-BOT][-TRADE-] SELL VOLUME : ', volume);
+                const accountMarket = market.replace((KRW + '-'), '');
+                const volume = accountInfo.find(item => item.currency === accountMarket)?.balance;
+                console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] VOLUME : ', volume);
                 
-                orderReqParam = {
+                reqParam = {
                     market : market,
                     side : side,
                     volume : volume,
                     ord_type : 'market' // 시장가 주문(매도)
                 }
+
+                result = await executeOrder(reqParam); // 매수
             }
-            // 주문
-            result = await executeOrder(orderReqParam);
+
+            console.info('[UPBIT-TRADING-BOT][-TRADE-] ORDER WAITING !!');
         }
 
         return result;
     } catch (e) {
         console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
-        const intervalManager = require('../utils/interval-manager');
-        intervalManager.stopInterval();
+        require('../utils/interval-manager').stopInterval();
         return e;
     }
 }
