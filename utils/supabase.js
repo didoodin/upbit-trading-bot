@@ -6,7 +6,7 @@ const { supabase } = require('../common/config');
  * @param {*} res 
  * @returns 
  */
-module.exports.selectUserById = async (req, res) => {
+const selectUserById = async (req, res) => {
     const userId = req;
   
     const { data, error } = await supabase
@@ -30,7 +30,7 @@ module.exports.selectUserById = async (req, res) => {
  * @param {*} res 
  * @returns 
  */
-module.exports.updateLoginDtById = async (req, res) => {
+const updateLoginDtById = async (req, res) => {
     const userId = req;
 
     const { data, error } = await supabase
@@ -52,7 +52,7 @@ module.exports.updateLoginDtById = async (req, res) => {
  * @param {*} res 
  * @returns 
  */
-module.exports.selectOrderRequestbyId = async (req, res) => {
+const selectOrderRequestbyId = async (req, res) => {
     const userId = req;
 
     const { data, error } = await supabase
@@ -75,7 +75,7 @@ module.exports.selectOrderRequestbyId = async (req, res) => {
  * @param {*} res 
  * @returns 
  */
-module.exports.selectCommonConfig = async (req, res) => {
+const selectCommonConfig = async (req, res) => {
     const configKey = req;
   
     const { data, error } = await supabase
@@ -92,3 +92,5 @@ module.exports.selectCommonConfig = async (req, res) => {
       
       return data;
 };
+
+module.exports = { selectUserById, updateLoginDtById, selectOrderRequestbyId, selectCommonConfig };

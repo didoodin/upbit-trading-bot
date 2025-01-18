@@ -46,7 +46,7 @@ async function call(method, endpoint, body = {}) {
 
     try {
         console.info('[UPBIT-TRADING-BOT][-API CALL-] REQ-URL : ', url);
-        console.info('[UPBIT-TRADING-BOT][-API CALL-] REQ-HEAD : ', headers);
+        // console.info('[UPBIT-TRADING-BOT][-API CALL-] REQ-HEAD : ', headers);
         console.info('[UPBIT-TRADING-BOT][-API CALL-] REQ-BODY : ', options);
 
         const response = await axios(options);
