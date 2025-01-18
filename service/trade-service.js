@@ -80,17 +80,32 @@ const executeTrade = async (req, res) => {
                 }
             } else if (signal < 0) { // 매도
                 const accountMarket = market.replace((KRW + '-'), '');
-                const volume = accountInfo.find(item => item.currency === accountMarket)?.balance;
-                console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] VOLUME : ', volume);
-                
-                reqParam = {
-                    market : market,
-                    side : side,
-                    volume : volume,
-                    ord_type : 'market' // 시장가 주문(매도)
-                }
+                const balance = accountInfo.find(item => item.currency === accountMarket)?.balance;
+              
+                if (!balance) {
+                    console.info('[UPBIT-TRADING-BOT][-TRADE-] ORDER WAITING !!');
+                    return result;
+                } else {
+                    const volume = await calculateVolume({ side : side, accountBalance : balance, entryPrice : currentPrice });
+                    // const volume = accountInfo.find(item => item.currency === accountMarket)?.balance;    
+                    console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] VOLUME : ', volume);
 
-                result = await executeOrder(reqParam); // 매수
+                    // 매도 시 내 평단이랑 비교 절차 필요
+                    const avgBuyPrice = accountInfo.find(item => item.currency === accountMarket)?.avg_buy_price;
+
+                    if (currentPrice > avgBuyPrice) {
+                        return result;
+                    } else {
+                        reqParam = {
+                            market : market,
+                            side : side,
+                            volume : volume,
+                            ord_type : 'market' // 시장가 주문(매도)
+                        }
+        
+                        result = await executeOrder(reqParam); // 매도
+                    }
+                }
             }
 
             console.info('[UPBIT-TRADING-BOT][-TRADE-] ORDER WAITING !!');

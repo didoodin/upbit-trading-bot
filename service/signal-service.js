@@ -5,23 +5,23 @@ const checkSignal = async (req, res) => {
     const { currentPrice, rsi, bb } = req;
     const { BBH: upperBand, BBL: lowerBand } = bb[0];
 
-    const upperDistance = calculateDistance(upperBand, currentPrice);
-    const lowerDistance = calculateDistance(currentPrice, lowerBand);
+    const upperDistance = await calculateDistance(upperBand, currentPrice);
+    const lowerDistance = await calculateDistance(currentPrice, lowerBand);
 
-    let signal = determineSignal(rsi, upperDistance, lowerDistance);
+    let signal = await determineSignal(rsi, upperDistance, lowerDistance);
     return signal;
 };
 
 // 거리 계산
-const calculateDistance = (price1, price2) => {
+const calculateDistance = async (price1, price2) => {
     return ((price1 - price2) / price1) * 100;
 };
 
 // 신호 결정
-const determineSignal = (rsi, upperDistance, lowerDistance) => {
+const determineSignal = async (rsi, upperDistance, lowerDistance) => {
     // RSI 임계값 조회
-    const buy = supabase.selectCommonConfig(API_CODE.RSI_BUY);
-    const sell = supabase.selectCommonConfig(API_CODE.RSI_SELL);
+    const buy = await supabase.selectCommonConfig(API_CODE.RSI_BUY);
+    const sell = await supabase.selectCommonConfig(API_CODE.RSI_SELL);
 
     if (rsi < buy && lowerDistance <= API_CODE.DISTANCE) {
         console.info('[UPBIT-TRADING-BOT] BUY SIGNAL !!');

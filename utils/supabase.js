@@ -90,7 +90,7 @@ const selectCommonConfig = async (req, res) => {
         return null;
       }
       
-      return data;
+      return data.config_value;
 };
 
 module.exports = { selectUserById, updateLoginDtById, selectOrderRequestbyId, selectCommonConfig };
