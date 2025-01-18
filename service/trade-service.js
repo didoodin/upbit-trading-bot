@@ -79,7 +79,7 @@ const executeTrade = async (req, res) => {
                 } else {
                 }
             } else if (signal < 0) { // 매도
-                const accountMarket = market.replace((KRW + '-'), '');
+                const accountMarket = orderRequest.market;
                 const balance = accountInfo.find(item => item.currency === accountMarket)?.balance;
               
                 if (!balance) {

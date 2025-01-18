@@ -3,7 +3,7 @@ const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const queryEncode = require("querystring").encode;
 
-const { UPBIT_ACCESS_KEY: ACCESS_KEY, UPBIT_SECRET_KEY: SECRET_KEY } = require('../common/config');
+const { UPBIT_ACCESS_KEY: ACCESS_KEY, UPBIT_SECRET_KEY: SECRET_KEY } = require('../common/env-config');
 
   function makeJwtToken(req) {
     // console.info('[UPBIT-TRADING-BOT][-JWT-] MAKE JWT TOKEN');

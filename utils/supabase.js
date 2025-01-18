@@ -1,4 +1,4 @@
-const { supabase } = require('../common/config');
+const { supabase } = require('../common/env-config');
 
 /**
  * 사용자 조회

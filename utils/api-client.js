@@ -1,5 +1,5 @@
 const { DOMAIN } = require('../common/constants');
-const { axios } = require('../common/config');
+const { axios } = require('../common/env-config');
 const { makeJwtToken } = require('./jwt');
 
 /**
