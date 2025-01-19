@@ -60,7 +60,7 @@ const executeOrder = async (req, res) => {
  * @param {*} param0 
  * @returns 
  */
-const calculateVolume = async (req, res) => { // accountBalance, entryPrice
+const checkOrderAmount = async (req, res) => { // accountBalance, entryPrice
     // 계좌 대비 리스크 허용 비율 조회
     const supabase = require('../utils/supabase');
     const riskPercentage = await supabase.selectCommonConfig(API_CODE.RISK_RATE);
@@ -80,54 +80,55 @@ const calculateVolume = async (req, res) => { // accountBalance, entryPrice
     try {
         // 1. 손절가 자동 계산
         const stopLossPrice = entryPrice * (1 - stopLossPercentage);
-        console.debug(stopLossPrice);
+        // console.debug(stopLossPrice);
 
         // 2. 최대 손실 허용 금액 계산
         const maxLossAmount = accountBalance * riskPercentage;
-        console.debug(maxLossAmount);
+        // console.debug(maxLossAmount);
     
         // 3. 최대 매수 금액 계산
         const maxBuyAmount = accountBalance * maxAllocation;
-        console.debug(maxBuyAmount);
+        // console.debug(maxBuyAmount);
     
         // 4. 리스크 기준 주문 수량 계산
         const quantityBasedOnRisk = maxLossAmount / (entryPrice - stopLossPrice);
-        console.debug(quantityBasedOnRisk);
+        // console.debug(quantityBasedOnRisk);
     
         // 5. 최대 매수 금액 기준 주문 수량 계산
         const quantityBasedOnAllocation = maxBuyAmount / entryPrice;
-        console.debug(quantityBasedOnAllocation);
+        // console.debug(quantityBasedOnAllocation);
     
         // 6. 최소값으로 주문 수량 제한
         orderQuantity = Math.min(quantityBasedOnRisk, quantityBasedOnAllocation);
-        console.debug(orderQuantity);
+        // console.debug(orderQuantity);
     
         // 7. 수수료 반영
         orderQuantity *= (1 - feeRate);
-        console.debug(orderQuantity);
+        // console.debug(orderQuantity);
     
         // 8. 최소 주문 단위로 반올림
         orderQuantity = Math.floor(orderQuantity / minOrderSize) * minOrderSize;
-        console.debug(orderQuantity);
+        // console.debug(orderQuantity);
     
         // 9. 최소 주문 금액 검증
         const orderPrice = Math.round(orderQuantity * entryPrice); // 주문 금액
-        console.debug(orderPrice);
+        // console.debug(orderPrice);
         
         if (orderPrice < minOrderPrice) {
-            console.error('[UPBIT-TRADING-BOT][VOLUME] BALANCE IS BELOW THE MIN ORDER AMOUT');
+            console.error('[UPBIT-TRADING-BOT][-VOLUME-][BUY] INSUFFICIENT BALANCE');
             return 0; // 주문 불가능
         } 
 
         if (side === API_CODE.BUY) {
+            console.info('[UPBIT-TRADING-BOT][-VOLUME-][BUY] TARGET ORDER AMOUNT : ', orderPrice);
             return orderPrice;
         } else if (side === API_CODE.SELL) {
             return orderQuantity;
         }
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][VOLUME] ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-VOLUME-] ERROR : ', e);
         return e;
     }
   }
 
-module.exports = { setOrderReqInfo, calculateVolume, executeOrder };
+module.exports = { setOrderReqInfo, checkOrderAmount, executeOrder };
