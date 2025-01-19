@@ -11,27 +11,7 @@ const COUNT = 200;
 const KRW = 'KRW';
 
 /**
-1. 사용자 주문 요청 정보 조회 (supabase)
-2. 보조 지표 확인 후 신호 체크
-	- 캔들 조회 API 요청 (upbit)
-	- RSI 계산
-	- 볼린저 밴드 계산
-	- 현재가 정보 API 요청 (upbit)
-3. 신호 분기 (0 : 대기 / 1 : 매수 / -1 : 매도)
-	- 계좌 조회 API 요청 (upbit)
-	    - 코인 존재 여부 체크
-    3-1. 매수
-        - 주문 금액 계산 (내 보유 자산 기준)
-        3-1-1. 목표 코인 : 보유 O (분할 매수 시도)
-            - 목표 단가 도달 여부 체크 (내 평단 -8%) -> 도달 O : 시장가 매수 (1)
-        3-1-2. 목표 코인 : 보유 X
-            - 시장가 매수 시도 (2)
-    3-2. 매도
-        3-2-1. 목표 코인 미보유 -> 리턴
-        3-2-2. 목표 코인 보유
-            - 목표 단가 설정 (내 평단 +8%) -> 도달 시 매도 (1)
-                - 내 보유 수량 체크
-    3-3. 대기 -> 리턴
+ * 주문(매수/매도)
  * @param {*} req 
  * @param {*} res 
  * @returns 
@@ -44,7 +24,7 @@ const executeTrade = async (req, res) => {
     try {
         let period = '';
         let marketId = '';
-        let KoreaMarketId = '';
+        let koreaMarketId = '';
         let currentPrice = '';
         let side = '';
         let candle = {};
@@ -55,11 +35,11 @@ const executeTrade = async (req, res) => {
         
         if (orderRequest) {
             marketId = orderRequest.market;
-            KoreaMarketId = KRW + '-' + orderRequest.market; // KRW-MARKET ID
+            koreaMarketId = KRW + '-' + orderRequest.market; // KRW-MARKET ID
             period = orderRequest.period;
 
             // 캔들 조회
-            candle = await getCandle({ minutes: period, market: KoreaMarketId, count: COUNT });
+            candle = await getCandle({ minutes: period, market: koreaMarketId, count: COUNT });
 
             // RSI 계산
             candle.push({ code: ROUTE.indicators.rsi.code });
@@ -72,7 +52,7 @@ const executeTrade = async (req, res) => {
             console.info('[UPBIT-TRADING-BOT][-TRADE-] BB :', bb[0]);
 
             // 현재가 정보
-            const ticker = await getTicker({ markets : KoreaMarketId }); 
+            const ticker = await getTicker({ markets : koreaMarketId }); 
             currentPrice = ticker[0].trade_price; // 현재가 정보
             console.info('[UPBIT-TRADING-BOT][-TRADE-] CURRENT PRICE : ', currentPrice);
 
@@ -98,7 +78,7 @@ const executeTrade = async (req, res) => {
                         const price = await checkOrderAmount({ side, accountBalance: balance, entryPrice: currentPrice });
 
                         if (price !== 0) {
-                            const reqParam = { market: KoreaMarketId, side, price: price.toString(), ord_type: 'price' };
+                            const reqParam = { market: koreaMarketId, side, price: price.toString(), ord_type: 'price' };
                             result = await handleBuyOrder(reqParam, currentPrice, targetCoin, avgBuyPrice);
                         }
                         console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] ***** BUY END *****');
@@ -106,7 +86,7 @@ const executeTrade = async (req, res) => {
 
                     case API_CODE.SELL:
                         console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] ***** SELL START *****');
-                        result = await handleSellOrder({}, KoreaMarketId, accountInfo, currentPrice, marketId);
+                        result = await handleSellOrder({}, koreaMarketId, accountInfo, currentPrice, marketId);
                         console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] ***** SELL END *****');
                         break;
 
@@ -152,13 +132,13 @@ const handleBuyOrder = async (reqParam, currentPrice, targetCoin, avgBuyPrice) =
 /**
  * 매도 주문 처리
  * @param {Object} reqParam - 주문 파라미터
- * @param {string} KoreaMarketId - 시장 ID (KRW-MARKET)
+ * @param {string} koreaMarketId - 시장 ID (KRW-MARKET)
  * @param {Object} accountInfo - 계좌 정보
  * @param {number} currentPrice - 현재 가격
  * @param {string} marketId - 시장 ID (KRW-MARKET)
  * @returns {string} 주문 결과
  */
-const handleSellOrder = async (reqParam, KoreaMarketId, accountInfo, currentPrice, marketId) => {
+const handleSellOrder = async (reqParam, koreaMarketId, accountInfo, currentPrice, marketId) => {
     const targetCoin = accountInfo.find(item => item.currency === marketId);
 
     if (!targetCoin) {
@@ -174,7 +154,7 @@ const handleSellOrder = async (reqParam, KoreaMarketId, accountInfo, currentPric
         return ''; // 목표 도달하지 않으면 매도하지 않음
     } else {
         const volume = targetCoin.balance; // 보유 수량
-        reqParam = { market: KoreaMarketId, side: API_CODE.SELL, volume, ord_type: 'market'};
+        reqParam = { market: koreaMarketId, side: API_CODE.SELL, volume, ord_type: 'market'};
         return await executeOrder(reqParam); // 매도
     }
 };
