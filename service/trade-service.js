@@ -46,6 +46,7 @@ const executeTrade = async (req, res) => {
         let marketId = '';
         let KoreaMarketId = '';
         let currentPrice = '';
+        let side = '';
         let candle = {};
         let signal = 0;
 
@@ -76,8 +77,8 @@ const executeTrade = async (req, res) => {
             console.info('[UPBIT-TRADING-BOT][-TRADE-] CURRENT PRICE : ', currentPrice);
 
             // 신호 체크
-            signal = await checkSignal({ 'currentPrice' : currentPrice, 'rsi' : rsi, 'bb' : bb });
-            const side = signal !== 0 && signal > 0 ? API_CODE.BUY : API_CODE.SELL;
+            side = await checkSignal({ 'currentPrice' : currentPrice, 'rsi' : rsi, 'bb' : bb });
+            console.info(`[UPBIT-TRADING-BOT][-TRADE-] SIGNAL : ${side}`);
 
             // 계좌 조회
             let accountInfo = await getAccounts({});

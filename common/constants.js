@@ -62,7 +62,8 @@ module.exports = {
     API_CODE : {
       RUN_STATUS : 'run_status', // 서버 실행 여부
       BUY : 'bid', // 매수
-      SELL : 'ask', // 매도
+      SELL : 'ask', // 매도,
+      WAIT : 'wait',
       RSI_BUY : 'rsi_buy', // 매수 RSI 임계값
       RSI_SELL : 'rsi_sell', // 매도 RSI 임계값,
       DISTANCE : 5, // 밴드와의 거리 임계값,
