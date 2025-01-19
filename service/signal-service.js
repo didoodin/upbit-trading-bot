@@ -9,7 +9,9 @@ const checkSignal = async (req, res) => {
     const lowerDistance = await calculateDistance(currentPrice, lowerBand);
 
     let signal = await determineSignal(rsi, upperDistance, lowerDistance);
-    return signal;
+    let side = (signal === 0) ? API_CODE.WAIT : (signal > 0 ? API_CODE.BUY : API_CODE.SELL);
+    
+    return side;
 };
 
 // 거리 계산
