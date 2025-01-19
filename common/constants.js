@@ -66,6 +66,8 @@ module.exports = {
       RSI_BUY : 'rsi_buy', // 매수 RSI 임계값
       RSI_SELL : 'rsi_sell', // 매도 RSI 임계값,
       DISTANCE : 5, // 밴드와의 거리 임계값,
-      RISK_RATE : 'risk_rate' // 계좌 대비 리스크 허용 비율
+      RISK_RATE : 'risk_rate', // 계좌 대비 리스크 허용 비율,
+      TARGET_BUY_RATE : 'target_buy_rate', // 목표 매수 비율
+      TARGET_SELL_RATE : 'target_sell_rate', // 목표 매도 비율
     }
   }

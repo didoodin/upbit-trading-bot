@@ -81,32 +81,38 @@ const executeTrade = async (req, res) => {
 
             // 계좌 조회
             let accountInfo = await getAccounts({});
+            const hasBalance = accountInfo.find(item => item.currency === KRW)?.balance;
+            const canInvest = hasBalance > 5000;
 
-            // 코인 존재 여부 및 목표 가격
-            const { targetCoin, avgBuyPrice } = getTargetCoinInfo(accountInfo, marketId);
+            if (!canInvest) {
+                return result;
+            } else {
+                // 코인 존재 여부 및 목표 가격
+                const { targetCoin, avgBuyPrice } = getTargetCoinInfo(accountInfo, marketId);
 
-            switch (side) {
-                case API_CODE.BUY:
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] ***** BUY START *****');
-                    const balance = accountInfo.find(item => item.currency === KRW)?.balance;
-                    const price = await checkOrderAmount({ side, accountBalance: balance, entryPrice: currentPrice });
+                switch (side) {
+                    case API_CODE.BUY:
+                        console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] ***** BUY START *****');
+                        const balance = accountInfo.find(item => item.currency === KRW)?.balance;
+                        const price = await checkOrderAmount({ side, accountBalance: balance, entryPrice: currentPrice });
 
-                    if (price !== 0) {
-                        const reqParam = { market: KoreaMarketId, side, price: price.toString(), ord_type: 'price' };
-                        result = await handleBuyOrder(reqParam, currentPrice, targetCoin, avgBuyPrice);
-                    }
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] ***** BUY END *****');
-                    break;
+                        if (price !== 0) {
+                            const reqParam = { market: KoreaMarketId, side, price: price.toString(), ord_type: 'price' };
+                            result = await handleBuyOrder(reqParam, currentPrice, targetCoin, avgBuyPrice);
+                        }
+                        console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] ***** BUY END *****');
+                        break;
 
-                case API_CODE.SELL:
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] ***** SELL START *****');
-                    result = await handleSellOrder({}, KoreaMarketId, accountInfo, currentPrice, marketId);
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] ***** SELL END *****');
-                    break;
+                    case API_CODE.SELL:
+                        console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] ***** SELL START *****');
+                        result = await handleSellOrder({}, KoreaMarketId, accountInfo, currentPrice, marketId);
+                        console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] ***** SELL END *****');
+                        break;
 
-                default:
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-] ***** ORDER WAIT *****');
-                    return result;
+                    default:
+                        console.info('[UPBIT-TRADING-BOT][-TRADE-] ***** ORDER WAIT *****');
+                        return result;
+                }
             }
         }
         return result;
@@ -192,9 +198,24 @@ const getTargetCoinInfo = (accountInfo, marketId) => {
  * @param {number} req.avgBuyPrice - 평균 매수 가격
  * @returns {boolean} 목표 도달 여부
  */
-const getTargetReached = (side, currentPrice, avgBuyPrice) => {
-    const { code, targetRatio } = side === API_CODE.BUY ? { code: 'BUY', targetRatio: 0.92 } : { code: 'SELL', targetRatio: 1.08 };
-    const targetPrice = avgBuyPrice * targetRatio;
+const getTargetReached = async (side, currentPrice, avgBuyPrice) => {
+    let code = '';
+    let targetRatio = 0;
+    let targetPrice = 0;
+    let targetReached = false;
+
+    if (side === API_CODE.BUY) {
+        code = 'BUY';
+        targetRatio = await supabase.selectCommonConfig(API_CODE.TARGET_BUY_RATE);
+        targetPrice = avgBuyPrice * (1 - (targetRatio / 100));
+        targetReached = currentPrice < targetPrice;
+    } else {
+        code = 'SELL';
+        targetRatio = await supabase.selectCommonConfig(API_CODE.TARGET_SELL_RATE);
+        targetPrice = avgBuyPrice * (1 + (targetRatio / 100));
+        targetReached = currentPrice >= targetPrice;
+    }
+
     console.info(`[UPBIT-TRADING-BOT][-TRADE-][${code}] MARKET PRICE : ${currentPrice} | TARGET PRICE : ${targetPrice}`);
     return side === API_CODE.BUY ? currentPrice < targetPrice : currentPrice >= targetPrice;
 };
