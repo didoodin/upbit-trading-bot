@@ -7,7 +7,7 @@ function startInterval(userId) {
             const tradeService = require('../service/trade-service');
             tradeService.executeTrade(userId);  // 비동기 함수는 async로 래핑하여 호출
         })();
-    }, 5000);
+    }, process.env.interval);
 };
 
 function stopInterval() {

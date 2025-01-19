@@ -53,7 +53,7 @@ const executeTrade = async (req, res) => {
         console.info('[UPBIT-TRADING-BOT][-TRADE-] SIGNAL : ', signal);
 
         if (signal != 0) {
-            console.info('[UPBIT-TRADING-BOT][-TRADE-] ORDER INFO SETTING START !!');
+            console.info('[UPBIT-TRADING-BOT][-TRADE-] ORDER INFO SETTING START');
             const side = signal > 0 ? API_CODE.BUY : API_CODE.SELL;
 
             // 계좌 조회
@@ -83,15 +83,16 @@ const executeTrade = async (req, res) => {
                 const balance = accountInfo.find(item => item.currency === accountMarket)?.balance;
               
                 if (!balance) {
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-] ORDER WAITING !!');
+                    console.info('[UPBIT-TRADING-BOT][-TRADE-] CANNOT SELL: NO COINS TO SELL');
                     return result;
                 } else {
-                    const volume = await calculateVolume({ side : side, accountBalance : balance, entryPrice : currentPrice });
-                    // const volume = accountInfo.find(item => item.currency === accountMarket)?.balance;    
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] VOLUME : ', volume);
+                    // const volume = await calculateVolume({ side : side, accountBalance : balance, entryPrice : currentPrice });
+                    const volume = accountInfo.find(item => item.currency === accountMarket)?.balance;    
+                    // console.info('[UPBIT-TRADING-BOT][-TRADE-][SELL] VOLUME : ', volume);
 
                     // 매도 시 내 평단이랑 비교 절차 필요
                     const avgBuyPrice = accountInfo.find(item => item.currency === accountMarket)?.avg_buy_price;
+                    console.info("[UPBIT-TRADING-BOT][-TRADE-][SELL] CANNOT SELL: CURRENT PRICE < AVERAGE PRICE");
 
                     if (currentPrice > avgBuyPrice) {
                         return result;
@@ -108,7 +109,7 @@ const executeTrade = async (req, res) => {
                 }
             }
 
-            console.info('[UPBIT-TRADING-BOT][-TRADE-] ORDER WAITING !!');
+            console.info('[UPBIT-TRADING-BOT][-TRADE-] ***** ORDER WAITING *****');
         }
 
         return result;
