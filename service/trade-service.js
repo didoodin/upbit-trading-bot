@@ -62,7 +62,6 @@ const executeTrade = async (req, res) => {
 
             // 계좌 조회
             let accountInfo = await getAccounts({});
-            const hasBalance = accountInfo.find(item => item.currency === KRW)?.balance;
 
             // 코인 존재 여부 및 목표 가격
             const { targetCoin, avgBuyPrice } = getTargetCoinInfo(accountInfo, marketId);
