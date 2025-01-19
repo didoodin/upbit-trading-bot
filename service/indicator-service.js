@@ -82,6 +82,8 @@ const getIndicator = async (req, res) => {
  * @returns 
  */
 async function makeRsi(candleList) {
+    console.info('[UPBIT-TRADING-BOT][-INDICATOR-] RSI CHECK');
+
     try {
         if (!candleList || candleList.length === 0) {
             return null;
@@ -139,7 +141,7 @@ async function makeRsi(candleList) {
       
           return rsi;
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][- INDICATOR -] MAKE RSI ERROR !!');
+        console.error('[UPBIT-TRADING-BOT][-INDICATOR-] MAKE RSI ERROR');
         return e;
     }
 }
@@ -150,6 +152,8 @@ async function makeRsi(candleList) {
  * @returns 
  */
 async function makeBB(candleList) {
+    console.info('[UPBIT-TRADING-BOT][-INDICATOR-] BB CHECK');
+
     try {
         // 캔들 데이터 조회용
         const candleDatas = [];
