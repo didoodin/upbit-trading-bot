@@ -62,12 +62,12 @@ module.exports = {
     API_CODE : {
       RUN_STATUS : 'run_status', // 서버 실행 여부
       BUY : 'bid', // 매수
-      SELL : 'ask', // 매도,
+      SELL : 'ask', // 매도
       WAIT : 'wait',
       RSI_BUY : 'rsi_buy', // 매수 RSI 임계값
-      RSI_SELL : 'rsi_sell', // 매도 RSI 임계값,
-      DISTANCE : 5, // 밴드와의 거리 임계값,
-      RISK_RATE : 'risk_rate', // 계좌 대비 리스크 허용 비율,
+      RSI_SELL : 'rsi_sell', // 매도 RSI 임계값
+      DISTANCE : 5, // 밴드와의 거리 임계값
+      MAX_ALLOCATION : 'max_allocation', // 계좌 대비 최대 매수 금액 비율
       TARGET_BUY_RATE : 'target_buy_rate', // 목표 매수 비율
       TARGET_SELL_RATE : 'target_sell_rate', // 목표 매도 비율
     }
