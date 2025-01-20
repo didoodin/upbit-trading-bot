@@ -49,7 +49,7 @@ const executeTrade = async (req, res) => {
             // 볼린저 밴드 계산
             candle.push({ code: ROUTE.indicators.bb.code });
             const bb = await makeBB(candle);
-            console.info('[UPBIT-TRADING-BOT][-TRADE-] BB :', bb[0]);
+            console.info('[UPBIT-TRADING-BOT][-TRADE-] BB :', bb);
 
             // 현재가 정보
             const ticker = await getTicker({ markets : koreaMarketId }); 
