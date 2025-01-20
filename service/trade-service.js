@@ -187,7 +187,7 @@ const getTargetReached = async (side, currentPrice, avgBuyPrice) => {
     } else {
         code = 'SELL';
         targetRatio = await supabase.selectCommonConfig(API_CODE.TARGET_SELL_RATE);
-        targetPrice = avgBuyPrice * (1 + (targetRatio / 100));
+        targetPrice = Math.trunc(avgBuyPrice * (1 + (targetRatio / 100)));
         targetReached = currentPrice >= targetPrice;
     }
 
