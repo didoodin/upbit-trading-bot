@@ -152,8 +152,6 @@ async function makeRsi(candleList) {
  * @returns 
  */
 async function makeBB(candleList) {
-    console.info('[UPBIT-TRADING-BOT][-INDICATOR-] BB CHECK');
-
     try {
         // 캔들 데이터 조회용
         const candleDatas = [];
@@ -168,35 +166,38 @@ async function makeBB(candleList) {
 
         // 각 캔들 데이터 세트에 대해 처리
         for (const candleDataFor of candleDatas) {
-            const dfDt = candleDataFor.map(candle => candle.candle_date_time_kst);
-            const df = candleDataFor.map(candle => candle.trade_price).reverse();
+            const dfDt = candleDataFor.map(candle => candle.candle_date_time_kst).filter(candleDate => candleDate !== undefined).reverse();
+            const df = candleDataFor.map(candle => candle.trade_price).filter(candleDate => candleDate !== undefined).reverse();
 
             // 표준편차 곱수
             const unit = 2;
 
-            // 계산을 위해 마지막 20개 가격 데이터 추출
-            const last20Prices = df.slice(-20);
+            // 각 날짜마다 계산을 위해 dfDt와 df를 순차적으로 처리
+            for (let i = 0; i < dfDt.length; i++) {
+              // 최근 20개의 가격 데이터 추출 (현재 i번째 데이터를 포함)
+              const last20Prices = df.slice(i, i + 20);
 
-            // 평균/분산/표준편차 계산
-            const mean = last20Prices.reduce((a, b) => a + b, 0) / last20Prices.length;
-            const variance = last20Prices.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / last20Prices.length;
-            const standardDeviation = Math.sqrt(variance);
+              // 평균/분산/표준편차 계산
+              const mean = last20Prices.reduce((a, b) => a + b, 0) / last20Prices.length;
+              const variance = last20Prices.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / last20Prices.length;
+              const standardDeviation = Math.sqrt(variance);
 
-            const band1 = unit * standardDeviation;
-            const bbCenter = mean;
-            const bandHigh = bbCenter + band1;
-            const bandLow = bbCenter - band1;
+              const band1 = unit * standardDeviation;
+              const bbCenter = mean;
+              const bandHigh = bbCenter + band1;
+              const bandLow = bbCenter - band1;
 
-            bbList.push({
-                type: 'BB',
-                DT: dfDt[0],
-                BBH: Number(bandHigh.toFixed(4)), // 상단 밴드
-                BBM: Number(bbCenter.toFixed(4)), // 중간 밴드
-                BBL: Number(bandLow.toFixed(4))   // 하단 밴드
-            });
+              bbList.push({
+                  type: 'BB',
+                  DT: dfDt[i],  // 각 날짜에 해당하는 값
+                  BBH: Number(bandHigh.toFixed(4)), // 상단 밴드
+                  BBM: Number(bbCenter.toFixed(4)), // 중간 밴드
+                  BBL: Number(bandLow.toFixed(4))   // 하단 밴드
+              });
+          }
         }
     
-        return bbList;
+        return bbList[0];
     } catch (e) {
         console.error('[UPBIT-TRADING-BOT][- INDICATOR -] MAKE BB ERROR !!');
         console.error(e);
