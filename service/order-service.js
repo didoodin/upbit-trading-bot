@@ -63,10 +63,10 @@ const executeOrder = async (req, res) => {
 const checkOrderAmount = async (req, res) => { // accountBalance, entryPrice
     // 계좌 대비 리스크 허용 비율 조회
     const supabase = require('../utils/supabase');
-    const riskPercentage = await supabase.selectCommonConfig(API_CODE.RISK_RATE);
+    const riskPercentage = 0.02;
 
     const stopLossPercentage = 0.05;  // 손절가 계산 비율 (5%)
-    const maxAllocation = 0.4;        // 계좌 대비 최대 매수 금액 비율 (20%)
+    const maxAllocation = await supabase.selectCommonConfig(API_CODE.MAX_ALLOCATION); // 계좌 대비 최대 매수 금액 비율
     const minOrderPrice = 5000;      // 최소 주문 금액
     const minOrderSize = 0.0001;      // 최소 주문 단위
     const feeRate = 0.05;            // 거래소 수수료 비율 (0.05%)
