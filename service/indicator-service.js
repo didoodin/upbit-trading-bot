@@ -197,7 +197,7 @@ async function makeBB(candleList) {
           }
         }
     
-        return bbList;
+        return bbList[0];
     } catch (e) {
         console.error('[UPBIT-TRADING-BOT][- INDICATOR -] MAKE BB ERROR !!');
         console.error(e);

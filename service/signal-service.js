@@ -3,14 +3,15 @@ const supabase = require('../utils/supabase');
 
 const checkSignal = async (req, res) => {
     const { currentPrice, rsi, bb } = req;
-    const { BBH: upperBand, BBL: lowerBand } = bb[0];
+    const { BBH: upperBand, BBL: lowerBand } = bb;
+    console.log(bb[0]);
 
     const upperDistance = await calculateDistance(upperBand, currentPrice);
     const lowerDistance = await calculateDistance(currentPrice, lowerBand);
 
     let signal = await determineSignal(rsi, upperDistance, lowerDistance);
     let side = (signal === 0) ? API_CODE.WAIT : (signal > 0 ? API_CODE.BUY : API_CODE.SELL);
-    
+
     return side;
 };
 
