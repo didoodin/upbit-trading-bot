@@ -1,5 +1,5 @@
 const { supabase } = require('../common/env-config');
-const { koreaDateISO } = require('../utils/date-utils');
+
 let userId = '';
 
 /**
@@ -33,11 +33,12 @@ const selectUserById = async (req, res) => {
  * @returns 
  */
 const updateLoginDtById = async (req, res) => {
+    const now = new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString();
     const userId = req;
 
     const { data, error } = await supabase
     .from('tb_user')
-    .update({ login_dt : koreaDateISO })
+    .update({ login_dt : now })
     .eq('user_id', userId);
 
     if (error) {
@@ -77,6 +78,7 @@ const selectTradeInfoById = async (req, res) => {
  * @param {*} res 
  */
 const insertTradeHist = async (req, res) => {
+  const now = new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString();
   
   const { data, error } = await supabase
     .from('tb_trade_hist')
@@ -88,8 +90,8 @@ const insertTradeHist = async (req, res) => {
         price: req.price, // 거래 단가
         fee: req.fee, // 수수료
         amount: req.amount, // 거래 총액
-        trade_dt : koreaDateISO,
-        reg_dt : koreaDateISO,
+        trade_dt : now,
+        reg_dt : now,
         upd_dt : null
       },
     ]);
