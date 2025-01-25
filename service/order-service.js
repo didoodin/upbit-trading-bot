@@ -1,5 +1,6 @@
 const { ROUTE, API_CODE } = require('../common/constants');
 const api = ROUTE.orders;
+const supabase = require('../utils/supabase');
 let reqInfo = {};
 
 const setOrderReqInfo = async (req, res) => {
@@ -46,7 +47,40 @@ const executeOrder = async (req, res) => {
     let data = {};
 
     try {
+        // 주문
         data = await call(api.order.method, (api.route + api.order.path), req);
+        console.info(data)
+
+        // 주문 체결 이력 추가
+        if (data) {
+            let type;
+            let price;
+            let amount;
+            let fee;
+    
+            if (data.side === API_CODE.BUY) {
+                type = 'BUY';
+                price = data.price;
+                amount = data.locked;
+                fee = data.remaining_fee;
+            } else if (data.side === API_CODE.SELL) {
+                type = 'SELL';
+                price = req.currentPrice;
+                amount = price * data.volume;
+                fee = amount * 0.05;
+            }
+    
+            const tradeInfo = {
+                'market' : data.market,
+                'type' : type,
+                'price': price, // 주문 당시 화폐 가격
+                'fee': fee, // 사용된 수수료
+                'amount': amount, // 거래 총액
+            };
+    
+            const result = await supabase.insertTradeHist(tradeInfo);
+            console.info(result)
+        }
 
         return data;
     } catch (e) {
@@ -115,20 +149,20 @@ const checkOrderAmount = async (req, res) => { // accountBalance, entryPrice
         // console.debug(orderPrice);
         
         if (orderPrice < minOrderPrice) {
-            console.error('[UPBIT-TRADING-BOT][-VOLUME-][BUY] INSUFFICIENT BALANCE');
+            console.error('[UPBIT-TRADING-BOT][-TRADE-][BUY] INSUFFICIENT BALANCE');
             return 0; // 주문 불가능
         } 
 
         if (side === API_CODE.BUY) {
-            console.info('[UPBIT-TRADING-BOT][-VOLUME-][BUY] TARGET ORDER AMOUNT : ', orderPrice);
+            console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] TARGET ORDER AMOUNT : ', orderPrice);
             return orderPrice;
         } else if (side === API_CODE.SELL) {
             return orderQuantity;
         }
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-VOLUME-] ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
         return e;
     }
-  }
+}
 
 module.exports = { setOrderReqInfo, checkOrderAmount, executeOrder };

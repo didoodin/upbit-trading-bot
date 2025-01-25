@@ -70,5 +70,6 @@ module.exports = {
       MAX_ALLOCATION : 'max_allocation', // 계좌 대비 최대 매수 금액 비율
       TARGET_BUY_RATE : 'target_buy_rate', // 목표 매수 비율
       TARGET_SELL_RATE : 'target_sell_rate', // 목표 매도 비율
+      CUT_LOSS_THRESHOLD : 'cut_loss_threshold' // 손절 기준 비율
     }
   }

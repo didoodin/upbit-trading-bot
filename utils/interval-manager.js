@@ -5,7 +5,7 @@ function startInterval(userId) {
     intervalId = setInterval(() => {
         (async () => {
             const tradeService = require('../service/trade-service');
-            tradeService.executeTrade(userId);  // 비동기 함수는 async로 래핑하여 호출
+            await tradeService.executeTrade(userId);  // 비동기 함수는 async로 래핑하여 호출
         })();
     }, process.env.interval);
 };
