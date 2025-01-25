@@ -65,9 +65,9 @@ const executeOrder = async (req, res) => {
                 fee = data.remaining_fee;
             } else if (data.side === API_CODE.SELL) {
                 type = 'SELL';
-                price = req.currentPrice;
-                amount = price * data.volume;
-                fee = amount * 0.05;
+                price = req.currentPrice * data.volume;
+                fee = price * 0.0005;
+                amount = price + fee;
             }
     
             const tradeInfo = {
