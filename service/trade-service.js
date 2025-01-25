@@ -166,7 +166,7 @@ const handleSellOrder = async (reqParam, accountInfo, currentPrice, marketId) =>
         return ''; // 목표 도달하지 않으면 매도하지 않음
     } else {
         const volume = targetCoin.balance; // 보유 수량
-        reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market'};
+        reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice };
         return await executeOrder(reqParam); // 매도
     }
 };
