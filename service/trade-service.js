@@ -70,7 +70,9 @@ const executeTrade = async (req, res) => {
                     const { targetCoin, avgBuyPrice } = await getTargetCoinInfo(accountInfo, marketId);
 
                     // 손절 여부 체크 및 진행
-                    await handleCutLoss(currentPrice, targetCoin.avg_buy_price, accountInfo, marketId);
+                    if (targetCoin) {
+                        await handleCutLoss(currentPrice, avgBuyPrice, accountInfo, marketId);
+                    }
 
                     switch (side) {
                         case API_CODE.BUY:
