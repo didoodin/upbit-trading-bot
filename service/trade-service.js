@@ -236,7 +236,9 @@ const handleCutLoss = async (currentPrice, avgBuyPrice, accountInfo, marketId) =
     if (isCutLoss) {
         const targetCoin = accountInfo.find(item => item.currency === marketId);
         const volume = targetCoin.balance; // 보유 수량
-        const reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market'};
+
+        // 손절 매도에만 isCutLoss를 넘겨줌
+        const reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice, isCutLoss : true };
 
         console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}][SELL] CUT LOSS !!!!!`);
         return await executeOrder(reqParam); // 손절 매도

@@ -88,7 +88,8 @@ const insertTradeHist = async (req, res) => {
         type: req.type, // 거래 유형
         price: req.price, // 거래 단가
         fee: req.fee, // 수수료
-        amount: req.amount, // 거래 총액
+        amount: req.amount, // 거래 총액,
+        desc: req.desc,
         trade_dt : now,
         reg_dt : now,
         upd_dt : null
