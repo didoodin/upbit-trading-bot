@@ -1,5 +1,4 @@
 const { supabase } = require('../common/env-config');
-
 let userId = '';
 
 /**
