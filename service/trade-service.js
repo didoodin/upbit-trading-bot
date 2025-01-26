@@ -173,7 +173,7 @@ const handleSellOrder = async (reqParam, accountInfo, currentPrice, marketId) =>
     } else {
         const volume = targetCoin.balance; // 보유 수량
         reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice };
-        return await executeOrder(reqParam); // 매도
+        return await executeOrder(reqParam);
     }
 };
 
@@ -205,11 +205,16 @@ const getTargetReached = async (side, currentPrice, avgBuyPrice) => {
     if (side === API_CODE.BUY) {
         code = 'BUY';
         targetRatio = await supabase.selectCommonConfig(API_CODE.TARGET_BUY_RATE);
-        targetPrice = Math.trunc(avgBuyPrice * (1 - (targetRatio / 100)));
+        targetPrice = avgBuyPrice * (1 - (targetRatio / 100));
     } else {
         code = 'SELL';
         targetRatio = await supabase.selectCommonConfig(API_CODE.TARGET_SELL_RATE);
-        targetPrice = Math.trunc(avgBuyPrice * (1 + (targetRatio / 100)));
+        targetPrice = avgBuyPrice * (1 + (targetRatio / 100));
+    }
+
+    // 현재가에 소수점 존재 시 5자리까지 반올림 처리
+    if (targetPrice % 1 !== 0) {
+        targetPrice = targetPrice.toFixed(5);
     }
 
     console.info(`[UPBIT-TRADING-BOT][-TRADE-][${code}] MARKET PRICE : ${currentPrice} | TARGET PRICE : ${targetPrice}`);

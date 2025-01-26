@@ -6,16 +6,12 @@ const queryEncode = require("querystring").encode;
 const { UPBIT_ACCESS_KEY: ACCESS_KEY, UPBIT_SECRET_KEY: SECRET_KEY } = require('../common/env-config');
 
   function makeJwtToken(req) {
-    // console.info('[UPBIT-TRADING-BOT][-JWT-] MAKE JWT TOKEN');
-    // console.info('[UPBIT-TRADING-BOT][-JWT-] REQ-BODY : ', req);
-
     let payload = {};
     let queryHash = "";
     let authToken = "";
     let jwtToken = "";
 
     try {
-        // console.info('[UPBIT-TRADING-BOT][- JWT -]  MAKE QUERYSTRING START');
         const query = queryEncode(req);
         const hash = crypto.createHash('sha512');
         queryHash = hash.update(query, 'utf-8').digest('hex');
