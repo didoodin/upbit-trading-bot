@@ -5,6 +5,7 @@ const { makeRsi, makeBB } = require('../service/indicator-service');
 const { checkSignal } = require('../service/signal-service');
 const { checkOrderAmount, executeOrder } = require('../service/order-service');
 const supabase = require('../utils/supabase');
+const _ = require('lodash');
 
 const { ROUTE, API_CODE } = require('../common/constants');
 const COUNT = 200;
@@ -27,8 +28,11 @@ const executeTrade = async (req, res) => {
         let side = '';
         let candle = {};
 
-        // 사용자 주문 요청 정보 조회
-        const tradeInfos = await supabase.selectTradeInfoById(userId);
+        // 주문 요청 정보 조회
+        let tradeInfos = await supabase.selectTradeInfoById(userId);
+
+        // 주문 요청 랜덤 셔플
+        tradeInfos = _.shuffle(tradeInfos);
         
         if (tradeInfos && tradeInfos.length > 0) {
             console.info(" ######################################################################################### ");
@@ -78,11 +82,13 @@ const executeTrade = async (req, res) => {
                         case API_CODE.BUY:
                             console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** BUY START **********`);
                             const balance = accountInfo.find(item => item.currency === KRW)?.balance; 
+
+                            // 주문 정보 계산
                             const price = await checkOrderAmount({ side, accountBalance: balance, entryPrice: currentPrice });
 
                             if (price !== 0) {
                                 const reqParam = { market: ('KRW-' + marketId), side, price: price.toString(), ord_type: 'price' };
-                                result = await handleBuyOrder(reqParam, currentPrice, targetCoin, avgBuyPrice);
+                                result = await handleBuyOrder(reqParam, currentPrice, targetCoin, Number(avgBuyPrice));
                             }
                             console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** BUY END **********`);
                             break;
@@ -128,7 +134,7 @@ const handleBuyOrder = async (reqParam, currentPrice, targetCoin, avgBuyPrice) =
         return await executeOrder(reqParam); // 시장가 매수
     } else {
          // 목표 단가 도달 여부 체크
-        const isTargetReached = await getTargetReached(API_CODE.BUY, currentPrice, avgBuyPrice);
+        const isTargetReached = await getTargetReached(reqParam.market, API_CODE.BUY, currentPrice, avgBuyPrice);
 
         // 목표 가격 도달하지 않으면, 분할 매수 시도
         if (!isTargetReached) {
@@ -199,7 +205,7 @@ const getTargetReached = async (side, currentPrice, avgBuyPrice) => {
     if (side === API_CODE.BUY) {
         code = 'BUY';
         targetRatio = await supabase.selectCommonConfig(API_CODE.TARGET_BUY_RATE);
-        targetPrice = avgBuyPrice * (1 - (targetRatio / 100));
+        targetPrice = Math.trunc(avgBuyPrice * (1 - (targetRatio / 100)));
     } else {
         code = 'SELL';
         targetRatio = await supabase.selectCommonConfig(API_CODE.TARGET_SELL_RATE);
@@ -217,19 +223,19 @@ const getTargetReached = async (side, currentPrice, avgBuyPrice) => {
  * @returns 
  */
 const handleCutLoss = async (currentPrice, avgBuyPrice, accountInfo, marketId) => {
-        const threshold = await supabase.selectCommonConfig(API_CODE.CUT_LOSS_THRESHOLD);
-        const priceDifference = (avgBuyPrice - currentPrice) / avgBuyPrice;
+    const threshold = await supabase.selectCommonConfig(API_CODE.CUT_LOSS_THRESHOLD);
+    const priceDifference = (avgBuyPrice - currentPrice) / avgBuyPrice;
 
-        const isCutLoss = priceDifference >= threshold;
-    
-        if (isCutLoss) {
-            const targetCoin = accountInfo.find(item => item.currency === marketId);
-            const volume = targetCoin.balance; // 보유 수량
-            const reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market'};
+    const isCutLoss = priceDifference >= threshold;
 
-            console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}][SELL] CUT LOSS !!!!!`);
-            return await executeOrder(reqParam); // 손절 매도
-        }
+    if (isCutLoss) {
+        const targetCoin = accountInfo.find(item => item.currency === marketId);
+        const volume = targetCoin.balance; // 보유 수량
+        const reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market'};
+
+        console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}][SELL] CUT LOSS !!!!!`);
+        return await executeOrder(reqParam); // 손절 매도
+    }
 };
 
 module.exports = { executeTrade }

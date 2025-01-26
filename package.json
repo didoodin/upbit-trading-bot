@@ -24,7 +24,6 @@
     "mathjs": "^14.0.1",
     "moment-timezone": "^0.5.46",
     "morgan": "^1.10.0",
-    "node-schedule": "^2.1.1",
     "uuid": "^11.0.5",
     "winston": "^3.17.0"
   }

@@ -1,18 +1,42 @@
-const schedule = require('node-schedule');
 const supabase = require('../utils/supabase');
-const { getYesterdayDate } = require('../utils/date-utils');
+const { dayjs, getYesterdayDate } = require('../utils/date-utils');
+let isRun = false;
 
-module.exports.dailyScheduler = async () => {
-  schedule.scheduleJob('0 9 * * *', async () => {
-    console.info('[UPBIT-TRADING-BOT][SCHEDULER] ********** DAILY CALCULATION SCHEDULER START ********** ');
-    try {
-      await getDailyCalcution();
-    } catch (e) {
-      console.error('[UPBIT-TRADING-BOT][SCHEDULER] DAILY CALCULATION SCHEDULER ERROR : ', e);
+async function runDailyCalcScheduler() {
+  try {
+      await dailyCalcScheduler();
+  } catch (e) {
+      console.error("[UPBIT-TRADING-BOT] ERROR DAILY SCHEDULER: ", e);
+  }
+}
+
+const dailyCalcScheduler = async () => {
+  const now = dayjs().tz('Asia/Seoul');
+  const targetTime = now.clone().set('hour', 9).set('minute', 0).set('second', 0).set('millisecond', 0);  // 오늘 아침 9시로 설정
+
+  // 이미 목표 시간이 지났으면 내일 시간으로 설정
+  if (now.isAfter(targetTime)) {
+      targetTime.add(1, 'day');
+  }
+
+  // 대기 시간 세팅
+  const timeUntilTarget = targetTime.diff(now);
+
+  // 목표 시간까지 기다린 후 실행
+  setTimeout(async () => {
+    if (!isRun) {
+      console.info('[UPBIT-TRADING-BOT][SCHEDULER] ********** DAILY CALCULATION SCHEDULER START ********** ');
+      await getDailyCalcution(); 
+      isRun = true; 
+      console.info('[UPBIT-TRADING-BOT][SCHEDULER] ********** DAILY CALCULATION SCHEDULER STOP ********** ');
     }
-    console.info('[UPBIT-TRADING-BOT][SCHEDULER] ********** DAILY CALCULATION SCHEDULER END ********** ');
-  });
-};
+
+    // 이후 매일 정해진 시간에 반복 실행
+    setInterval(async () => {
+      await getDailyCalcution(); 
+    }, 24 * 60 * 60 * 1000);
+  }, timeUntilTarget);
+}
 
 /**
  * 일별 정산 스케줄러
@@ -30,3 +54,5 @@ const getDailyCalcution = async (req, res) => {
       await supabase.insertDailyCalcStat({ tradeDt : dailyCalcStat[0].trade_dt, totalPrice : dailyCalcStat[0].total_price });
     }
 }
+
+module.exports = { runDailyCalcScheduler }
