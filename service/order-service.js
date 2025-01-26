@@ -8,8 +8,6 @@ const setOrderReqInfo = async (req, res) => {
     let path = req._parsedUrl.path;
     reqInfo = {};
 
-    console.info('[UPBIT-TRADING-BOT] SET ORDER REQUEST INFO START');
-
     switch (path) {
         case api.chance.path: // 주문 가능 정보
             reqInfo.path = path = api.chance.path;
@@ -76,9 +74,13 @@ const executeOrder = async (req, res) => {
                 'fee': fee, // 사용된 수수료
                 'amount': amount, // 거래 총액
             };
+
+            // 손절 시 체결 이력에 추가
+            if (req.isCutLoss) {
+                tradeInfo.desc = 'CUT LOSS';
+            }
     
-            const result = await supabase.insertTradeHist(tradeInfo);
-            console.info(result)
+            await supabase.insertTradeHist(tradeInfo);
         }
 
         return data;

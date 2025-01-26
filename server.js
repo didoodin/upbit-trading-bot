@@ -14,7 +14,7 @@ express.use(app.json());
 express.use(
   morgan('combined', {
     stream: {
-      write: (message) => logger.info(message.trim()),
+      write: (message) => console.info(message.trim()),
     },
   })
 );

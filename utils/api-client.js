@@ -45,9 +45,9 @@ async function call(method, endpoint, body = {}) {
     } 
 
     try {
-        console.info('[UPBIT-TRADING-BOT][-API CALL-] REQ-URL : ', url);
-        // console.info('[UPBIT-TRADING-BOT][-API CALL-] REQ-HEAD : ', headers);
-        console.info('[UPBIT-TRADING-BOT][-API CALL-] REQ-BODY : ', options);
+        console.debug('[UPBIT-TRADING-BOT][-API CALL-] REQ-URL : ', url);
+        // console.debug('[UPBIT-TRADING-BOT][-API CALL-] REQ-HEAD : ', headers);
+        console.debug('[UPBIT-TRADING-BOT][-API CALL-] REQ-BODY : ', options);
 
         const response = await axios(options);
 
@@ -58,7 +58,6 @@ async function call(method, endpoint, body = {}) {
             
             // 요청 가능 횟수
             let remainReqCnt = response.headers['remaining-req'];
-            console.debug(remainReqCnt);
 
             // 정규 표현식을 사용하여 sec 값을 추출
             const match = remainReqCnt.match(/sec=(\d+)/);

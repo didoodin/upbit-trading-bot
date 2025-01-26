@@ -16,11 +16,11 @@ const getTicker = async (req, res) => {
         let params = req.body ? req.body : req; 
 
         code = api.ableInfo.code;
-        console.info('[UPBIT-TRADING-BOT][', code, '] REQ-BODY : [', params,']');
+        console.debug('[UPBIT-TRADING-BOT][', code, '] REQ-BODY : [', params,']');
 
         // api call
         data = await call(api.ableInfo.method, api.ableInfo.path, params);
-        console.info('[UPBIT-TRADING-BOT][', code, '] RES-BODY : [', data, ']');
+        console.debug('[UPBIT-TRADING-BOT][', code, '] RES-BODY : [', data, ']');
         return data;
     } catch (e) {
         console.error('[UPBIT-TRADING-BOT] ERROR : ', e.message);

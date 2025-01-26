@@ -32,7 +32,7 @@ const getCandle = async (req, res) => {
         // delete params.minutes;
         delete params.code;
 
-        console.info('[UPBIT-TRADING-BOT][-CANDLE-] REQ-BODY : ', params);
+        console.debug('[UPBIT-TRADING-BOT][-CANDLE-] REQ-BODY : ', params);
 
         // api call
         data = await call(api.minute.method, (api.route + api.minute.path + unit), params);

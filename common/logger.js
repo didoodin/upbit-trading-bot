@@ -1,14 +1,15 @@
-const { createLogger, transports, format } = require('winston');
+const winston = require('winston');
 
-const logger = createLogger({
+const logger = winston.createLogger({
   level: 'info',
-  format: format.combine(
-    format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-    format.printf(({ timestamp, level, message }) => `[${timestamp}] ${level.toUpperCase()}: ${message}`)
+  format: winston.format.combine(
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    winston.format.printf(({ timestamp, level, message }) => `[${timestamp}] ${level.toUpperCase()}: ${message}`)
   ),
   transports: [
-    new transports.Console(), // console
-    // new transports.File({ filename: 'logs/app.log' }), // 파일에 저장
+    new winston.transports.Console({
+      format: winston.format.simple(),
+    }),
   ],
 });
 

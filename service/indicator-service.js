@@ -13,8 +13,7 @@ const { getCandle } = require('../service/candle-service');
  * @returns 
  */
 const getIndicator = async (req, res) => {
-    console.info('[UPBIT-TRADING-BOT][-INDICATOR-] START');
-    // console.info('[UPBIT-TRADING-BOT][-INDICATOR-] REQ-BODY : ', req);
+    // console.debug('[UPBIT-TRADING-BOT][-INDICATOR-] REQ-BODY : ', req);
 
     const path = req._parsedUrl && req._parsedUrl.path != null ? req._parsedUrl.path : '';
     let code = '';
@@ -71,7 +70,7 @@ const getIndicator = async (req, res) => {
 
       return { rsi: rsi, bb: bb };
     } catch (e) {
-      console.error('[UPBIT-TRADING-BOT][-INDICATOR-] INDICATOR ERROR !!');
+      console.error('[UPBIT-TRADING-BOT][-INDICATOR-] ERROR : ', e);
       return e;
     }
   }

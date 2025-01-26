@@ -6,11 +6,11 @@ let code = '';
 const getAccounts = async (req, res) => {
     let data = {};
     code = api.account.code;
-    console.info('[UPBIT-TRADING-BOT][-ACCOUNT-][', code, '] START');
+    console.debug('[UPBIT-TRADING-BOT][-ACCOUNT-][', code, '] START');
 
     try {
         data = await call(api.account.method, api.account.path, null);
-        console.info('[UPBIT-TRADING-BOT][-ACCOUNT-][', code, '] RES-BODY : ', data);
+        console.debug('[UPBIT-TRADING-BOT][-ACCOUNT-][', code, '] RES-BODY : ', data);
 
         return data;
     } catch (e) {
