@@ -21,4 +21,4 @@ const getYesterdayDate = () => {
     return `${year}-${month}-${day}`;
   };
 
-module.exports = { getYesterdayDate }
+module.exports = { dayjs, getYesterdayDate }

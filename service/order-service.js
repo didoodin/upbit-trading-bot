@@ -49,7 +49,6 @@ const executeOrder = async (req, res) => {
     try {
         // 주문
         data = await call(api.order.method, (api.route + api.order.path), req);
-        console.info(data)
 
         // 주문 체결 이력 추가
         if (data) {
@@ -90,32 +89,67 @@ const executeOrder = async (req, res) => {
 };
 
 /**
- * 주문 정보 계산
+ * 주문 정보 계산 시 매수/매도 분기
  * @param {*} param0 
  * @returns 
  */
-const checkOrderAmount = async (req, res) => { // accountBalance, entryPrice
-    // 계좌 대비 리스크 허용 비율 조회
-    const supabase = require('../utils/supabase');
-    const riskPercentage = 0.02;
-
-    const stopLossPercentage = 0.05;  // 손절가 계산 비율 (5%)
-    const maxAllocation = await supabase.selectCommonConfig(API_CODE.MAX_ALLOCATION); // 계좌 대비 최대 매수 금액 비율
-    const minOrderPrice = 5000;      // 최소 주문 금액
-    const minOrderSize = 0.0001;      // 최소 주문 단위
-    const feeRate = 0.05;            // 거래소 수수료 비율 (0.05%)
-
+const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPrice
     const side = req.side;
     const accountBalance = req.accountBalance;
     const entryPrice = req.entryPrice;
 
-    let orderQuantity;
-  
     try {
+        switch (side) {
+            case API_CODE.BUY:
+                if (accountBalance >= 5000 && accountBalance <= 10000) { // 계좌 잔액 5,000 ~ 10,000원 시 전량 매수
+                    console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] INSUFFICIENT FUNDS, FULL PURCHASE. : ', accountBalance);
+                    return accountBalance;
+                } else if (accountBalance > 10000 && accountBalance <= 20000) { // 계좌 잔액 10,000 ~ 20,000원 시 계좌 잔액의 0.6%
+                    console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] TARGET ORDER AMOUNT : ', (accountBalance * 0.6));
+                    return accountBalance * 0.6;
+                } else if (accountBalance > 20000) {
+                    console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] CALCULATE AMOUNT START : ', accountBalance);
+                    return await calculateAmount({ side, accountBalance, entryPrice }); // 20,000 초과 시 계산
+                }
+                break;
+ 
+            case API_CODE.SELL:
+                return await calculateAmount({ side, accountBalance, entryPrice }); // SELL 조건 처리
+            }
+    } catch (e) {
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] CHECK ORDER AMOUNT ERROR : ', e);
+        return e;
+    }
+}
+
+/**
+ * 주문 정보 계산
+ * 매수 : return -> price
+ * 매도 : return -> volume
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+const calculateAmount = async (req, res) => {
+    const side = req.side;
+    const accountBalance = req.accountBalance;
+    const entryPrice = req.entryPrice;
+
+    try {
+        const supabase = require('../utils/supabase');
+        let maxAllocation = await supabase.selectCommonConfig(API_CODE.MAX_ALLOCATION);
+    
+        const riskPercentage = 0.03;
+        const stopLossPercentage = 0.03;  // 손절가 계산 비율 (3%)
+        const minOrderPrice = 5000;      // 최소 주문 금액
+        const minOrderSize = 0.0001;      // 최소 주문 단위
+        const feeRate = 0.05;            // 거래소 수수료 비율 (0.05%)
+        let orderQuantity;
+    
         // 1. 손절가 자동 계산
         const stopLossPrice = entryPrice * (1 - stopLossPercentage);
         // console.debug(stopLossPrice);
-
+    
         // 2. 최대 손실 허용 금액 계산
         const maxLossAmount = accountBalance * riskPercentage;
         // console.debug(maxLossAmount);
@@ -152,15 +186,15 @@ const checkOrderAmount = async (req, res) => { // accountBalance, entryPrice
             console.error('[UPBIT-TRADING-BOT][-TRADE-][BUY] INSUFFICIENT BALANCE');
             return 0; // 주문 불가능
         } 
-
+    
         if (side === API_CODE.BUY) {
             console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] TARGET ORDER AMOUNT : ', orderPrice);
             return orderPrice;
         } else if (side === API_CODE.SELL) {
             return orderQuantity;
         }
-    } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
+    } catch(e) {
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] CALCULATE AMOUNT ERROR : ', e);
         return e;
     }
 }

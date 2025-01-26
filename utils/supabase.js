@@ -79,7 +79,7 @@ const selectTradeInfoById = async (req, res) => {
  */
 const insertTradeHist = async (req, res) => {
   const now = new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString();
-  
+
   const { data, error } = await supabase
     .from('tb_trade_hist')
     .insert([
@@ -135,13 +135,15 @@ const selectCommonConfig = async (req, res) => {
  * @returns 
  */
 const selectTradeHistByTradeDt = async (tradeDt) => {
-  const { data, error } = await supabase.rpc('select_trade_hist_by_trade_dt', { _trade_dt: tradeDt });
+  const { data, error } = await supabase
+  .rpc('select_trade_hist_by_trade_dt', { _trade_dt: tradeDt })
+  .single();
+
   if (error) {
     console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
     return null;
   }
 
-  console.info('[UPBIT-TRADING-BOT][DB] Trade History Data:', data);
   return data;
 };
 

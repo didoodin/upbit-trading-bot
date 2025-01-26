@@ -6,7 +6,6 @@ const morgan = require('morgan');
 const logger = require('./common/logger'); // Winston 로거 가져오기
 
 const { start } = require('./service/user-service');
-const { dailyScheduler } = require('./scheduler/daily-calc-scheduler');
 
 // json
 express.use(app.json());
@@ -19,9 +18,6 @@ express.use(
     },
   })
 );
-
-// 스케줄러 시작
-dailyScheduler();
 
 // router
 const { ROUTE } = require('./common/constants');

@@ -8,6 +8,8 @@ function startInterval(userId) {
             await tradeService.executeTrade(userId);  // 비동기 함수는 async로 래핑하여 호출
         })();
     }, process.env.interval);
+
+    require('../scheduler/daily-calc-scheduler').runDailyCalcScheduler();
 };
 
 function stopInterval() {
