@@ -134,7 +134,7 @@ const handleBuyOrder = async (reqParam, currentPrice, targetCoin, avgBuyPrice) =
         return await executeOrder(reqParam); // 시장가 매수
     } else {
          // 목표 단가 도달 여부 체크
-        const isTargetReached = await getTargetReached(reqParam.market, API_CODE.BUY, currentPrice, avgBuyPrice);
+        const isTargetReached = await getTargetReached(API_CODE.BUY, currentPrice, avgBuyPrice);
 
         // 목표 가격 도달하지 않으면, 분할 매수 시도
         if (!isTargetReached) {

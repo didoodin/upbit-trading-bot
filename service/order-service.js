@@ -107,11 +107,10 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
                 } else if (accountBalance > 10000 && accountBalance <= 20000) { // 계좌 잔액 10,000 ~ 20,000원 시 계좌 잔액의 0.6%
                     console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] TARGET ORDER AMOUNT : ', (accountBalance * 0.6));
                     return accountBalance * 0.6;
-                } else if (accountBalance > 20000) {
+                } else {
                     console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] CALCULATE AMOUNT START : ', accountBalance);
                     return await calculateAmount({ side, accountBalance, entryPrice }); // 20,000 초과 시 계산
                 }
-                break;
  
             case API_CODE.SELL:
                 return await calculateAmount({ side, accountBalance, entryPrice }); // SELL 조건 처리
