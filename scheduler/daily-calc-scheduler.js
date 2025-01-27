@@ -45,13 +45,16 @@ const dailyCalcScheduler = async () => {
  */
 const getDailyCalcution = async (req, res) => {
     // 어제 날짜 기준 정산 통계
-    const tradeDt = getYesterdayDate();
-    console.info(tradeDt)
+    const tradeDt = await getYesterdayDate();
     const dailyCalcStat = await supabase.selectTradeHistByTradeDt(tradeDt);
 
-    // 통계 데이터 추가
     if (dailyCalcStat) {
-      await supabase.insertDailyCalcStat({ tradeDt : dailyCalcStat[0].trade_dt, totalPrice : dailyCalcStat[0].total_price });
+      // 중복 체크
+      const count = await supabase.selectDailyCalcStatByTradeDt({ tradeDt : dailyCalcStat.trade_dt });
+
+      if (!count) {
+        await supabase.insertDailyCalcStat({ tradeDt : dailyCalcStat.trade_dt, totalPrice : dailyCalcStat.total_price });
+      }
     }
 }
 

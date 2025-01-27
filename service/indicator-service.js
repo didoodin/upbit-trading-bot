@@ -1,10 +1,9 @@
 const _ = require('lodash');
 const math = require('mathjs');
-
+const supabase = require('../utils/supabase');
+const { getCandle } = require('./market-service');
 const { ROUTE } = require('../common/constants');
 const api = ROUTE.indicators;
-
-const { getCandle } = require('../service/candle-service');
 
 /**
  * 보조 지표 계산
@@ -17,6 +16,7 @@ const getIndicator = async (req, res) => {
 
     const path = req._parsedUrl && req._parsedUrl.path != null ? req._parsedUrl.path : '';
     let code = '';
+    let ma = '';
     let rsi = '';
     let bb = '';
 
@@ -28,6 +28,9 @@ const getIndicator = async (req, res) => {
         console.info('[UPBIT-TRADING-BOT][-INDICATOR-] TYPE : [API]');
 
         switch (path) {
+          case api.ma.path:
+            code = api.ma.code;
+            break;
           case api.rsi.path:
             code = api.rsi.code;
             break;
@@ -42,7 +45,6 @@ const getIndicator = async (req, res) => {
           console.error('[UPBIT-TRADING-BOT][-INDICATOR-] CANDLE IS NULL');
           return null;  // candle이 없으면 null 반환
         }
-
       } else {
         console.info('[UPBIT-TRADING-BOT][-INDICATOR-] TYPE : [TRADE]');
 
@@ -56,32 +58,105 @@ const getIndicator = async (req, res) => {
       }
 
       switch (code) {
+        case api.ma.code: // MA
+            ma = await makeMA(candle);
+            console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][MA][${code}] MA : ${ma}`);
+            return rsi;
         case api.rsi.code: // RSI
-            console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][RSI][${code}] MAKE RSI START`);
-            rsi = await makeRsi(candle);
+            rsi = await makeRSI(candle);
             console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][RSI][${code}] RSI : ${rsi}`);
             return rsi;
         case api.bb.code: // BB
-            console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][BB][${code}] MAKE BB START`);
             bb = await makeBB(candle);
             console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][BB][${code}] ${bb}`);
             return bb;
         }
 
-      return { rsi: rsi, bb: bb };
+      return { ma: ma, rsi: rsi, bb: bb };
     } catch (e) {
       console.error('[UPBIT-TRADING-BOT][-INDICATOR-] ERROR : ', e);
       return e;
     }
   }
 
+  /**
+ * 이동평균선 계산
+ * @param {*} candleList 
+ * @returns 
+ */
+const makeMA = async (candleList, period) => {
+  try {
+      const candleDatas = [];
+      const movingAverages = [];
+
+      for (let i = 0; i <= 5; i++) {
+        candleDatas.push(candleList.slice(i, i + period));
+      }
+      
+      for (const candleData of candleDatas) {
+        const tradePrices = candleData.map(candle => candle.trade_price).filter(tradePrice => tradePrice !== undefined);
+
+        for (let i = 0; i <= tradePrices.length - period; i++) {
+          const slice = tradePrices.slice(i, i + period);
+          const average = slice.reduce((sum, value) => sum + value, 0) / period; // 평균 계산
+
+          movingAverages.push(average);
+        }
+      }
+  
+      return movingAverages;
+  } catch (e) {
+      console.error('[UPBIT-TRADING-BOT][-MA-] ERROR : ', e);
+  }
+}
+
+/**
+ * 이동평균선 크로스 체크
+ * 단기 이평선(15) / 장기 이평선(200) 기준으로 차이(0.5%) 비교
+ * 교차 지점이 아닌 안정권 체크를 위해 0.5 비율 체크
+ * 단기 이평선 > 장기 이평선 (꼴든 크로스) : 주문 진행
+ * 단기 이평선 < 장기 이평선 (데드 크로스) : 주문 미진행 / 전량 매도
+ * @param {*} req 
+ * @param {*} res 
+ */
+const checkMA = async (candleList, marketId) => {
+  let isProcessing = false;
+
+  const ma15 = await makeMA(candleList.slice(0, 15), 15);
+  const ma200 = await makeMA(candleList, 200);
+  console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] MA(15) ',ma15,' || MA(200) ',ma200);
+
+  // 이평선 비교 후 주문 정보 사용여부 갱신
+  if (ma15 < ma200 * 1.01) {
+    console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] CROSS CHECK << DEAD CROSS >>');
+    const isExist = await supabase.selectTradeInfo({market : marketId, useYn : 'Y'});
+
+    if (isExist) {
+      console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] TRADE INFO : DISABLE');
+      await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'N' });
+    }
+  } else if (ma15 > ma200 * 0.99) {
+    console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] CROSS CHECK << GODEN CROSS >>');
+    const isExist = await supabase.selectTradeInfo({market : marketId, useYn : 'N'});
+
+    if (isExist) {
+      console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] TRADE INFO : ENABLE');
+      await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'Y' });
+    }
+
+    isProcessing = true;
+  } 
+
+  return isProcessing;
+}
+
 /**
  * RSI 계산
  * @param {*} candleList 
  * @returns 
  */
-async function makeRsi(candleList) {
-    console.info('[UPBIT-TRADING-BOT][-INDICATOR-] RSI CHECK');
+async function makeRSI(candleList) {
+    console.info('[UPBIT-TRADING-BOT][-RSI-] RSI CHECK');
 
     try {
         if (!candleList || candleList.length === 0) {
@@ -140,7 +215,7 @@ async function makeRsi(candleList) {
       
           return rsi;
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-INDICATOR-] MAKE RSI ERROR');
+        console.error('[UPBIT-TRADING-BOT][-RSI-] ERROR : ', e);
         return e;
     }
 }
@@ -168,9 +243,6 @@ async function makeBB(candleList) {
             const dfDt = candleDataFor.map(candle => candle.candle_date_time_kst).filter(candleDate => candleDate !== undefined).reverse();
             const df = candleDataFor.map(candle => candle.trade_price).filter(candleDate => candleDate !== undefined).reverse();
 
-            // 표준편차 곱수
-            const unit = 2;
-
             // 각 날짜마다 계산을 위해 dfDt와 df를 순차적으로 처리
             for (let i = 0; i < dfDt.length; i++) {
               // 최근 20개의 가격 데이터 추출 (현재 i번째 데이터를 포함)
@@ -180,7 +252,9 @@ async function makeBB(candleList) {
               const mean = last20Prices.reduce((a, b) => a + b, 0) / last20Prices.length;
               const variance = last20Prices.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / last20Prices.length;
               const standardDeviation = Math.sqrt(variance);
-
+              
+              // 표준편차 곱수
+              const unit = 2;
               const band1 = unit * standardDeviation;
               const bbCenter = mean;
               const bandHigh = bbCenter + band1;
@@ -198,9 +272,9 @@ async function makeBB(candleList) {
     
         return bbList[0];
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][- INDICATOR -] MAKE BB ERROR !!');
+        console.error('[UPBIT-TRADING-BOT][-BB-] ERROR : ', e);
         console.error(e);
     }
   }
 
-module.exports = { getIndicator, makeRsi, makeBB };
+module.exports = { getIndicator, makeMA, checkMA, makeRSI, makeBB };

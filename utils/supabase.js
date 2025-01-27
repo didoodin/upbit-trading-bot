@@ -1,3 +1,4 @@
+const { koreaDate } = require('../utils/date-utils');
 const { supabase } = require('../common/env-config');
 let userId = '';
 
@@ -54,21 +55,48 @@ const updateLoginDtById = async (req, res) => {
  * @param {*} res 
  * @returns 
  */
-const selectTradeInfoById = async (req, res) => {
-    const userId = req;
+const selectTradeInfo = async (req, res) => {
+  let query = supabase
+              .from('tb_trade_info')
+              .select('*')
+              .eq('user_id', userId);
 
-    const { data, error } = await supabase
-    .from('tb_trade_info')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('use_yn', 'Y');
+  // 조건이 있을 경우 쿼리 추가
+  if (req.useYn) query = query.eq('use_yn', req.useYn);
+  if (req.market) query = query.eq('market', req.market);
 
-    if (error) {
-        console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
-        return null;
-    }
+  const { data, error } = await query;
+
+  if (error) {
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      return null;
+  }
     
     return data;
+};
+
+/**
+ * 주문 요청 정보 사용여부 갱신
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+const updateTradeInfoUseYn = async (req, res) => {
+  const { data, error } = await supabase
+  .from('tb_trade_info')  // 'orders' 테이블을 업데이트
+  .update({
+    use_yn: req.useYn,
+    upd_dt: koreaDate, 
+  })
+  .eq('market', req.market)
+  .eq('user_id', userId);
+
+  if (error) {
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      return null;
+  }
+  
+  return data;
 };
 
 /**
@@ -77,8 +105,6 @@ const selectTradeInfoById = async (req, res) => {
  * @param {*} res 
  */
 const insertTradeHist = async (req, res) => {
-  const now = new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString();
-
   const { data, error } = await supabase
     .from('tb_trade_hist')
     .insert([
@@ -90,8 +116,8 @@ const insertTradeHist = async (req, res) => {
         fee: req.fee, // 수수료
         amount: req.amount, // 거래 총액,
         desc: req.desc,
-        trade_dt : now,
-        reg_dt : now,
+        trade_dt : koreaDate,
+        reg_dt : koreaDate,
         upd_dt : null
       },
     ]);
@@ -111,21 +137,21 @@ const insertTradeHist = async (req, res) => {
  * @returns 
  */
 const selectCommonConfig = async (req, res) => {
-    const configKey = req;
+  const configKey = req;
+
+  const { data, error } = await supabase
+    .from('tb_common_config')
+    .select('config_value')
+    .eq('config_key', configKey)
+    .eq('use_yn', 'Y')
+    .single();
+
+  if (error) {
+    console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+    return null;
+  }
   
-    const { data, error } = await supabase
-      .from('tb_common_config')
-      .select('config_value')
-      .eq('config_key', configKey)
-      .eq('use_yn', 'Y')
-      .single();
-  
-      if (error) {
-        console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
-        return null;
-      }
-      
-      return data.config_value;
+  return data.config_value;
 };
 
 /**
@@ -145,6 +171,23 @@ const selectTradeHistByTradeDt = async (tradeDt) => {
   }
 
   return data;
+};
+
+/**
+ * 일별 정산 통계 중복 체크
+ */
+const selectDailyCalcStatByTradeDt = async (req, res) => {
+    const { data, error } = await supabase
+    .from('tb_daily_calc_stat')
+    .select('*', { count: 'exact' })
+    .eq('trade_dt', req.tradeDt);
+
+  if (error) {
+    console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+    return null;
+  } 
+
+  return data[0];
 };
 
 /**
@@ -168,4 +211,4 @@ const insertDailyCalcStat = async (req, res) => {
   return data;
 };
 
-module.exports = { selectUserById, updateLoginDtById, selectTradeInfoById, insertTradeHist, selectCommonConfig, selectTradeHistByTradeDt, insertDailyCalcStat };
+module.exports = { selectUserById, updateLoginDtById, selectTradeInfo, updateTradeInfoUseYn, insertTradeHist, selectCommonConfig, selectTradeHistByTradeDt, selectDailyCalcStatByTradeDt, insertDailyCalcStat };

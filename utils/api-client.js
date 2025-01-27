@@ -10,7 +10,6 @@ const { makeJwtToken } = require('./jwt');
  * @returns 
  */
 async function call(method, endpoint, body = {}) {
-    console.info('[UPBIT-TRADING-BOT][-API CALL-] START ');
     let authToken = '';
     let url = '';
     let options = {};
@@ -45,9 +44,9 @@ async function call(method, endpoint, body = {}) {
     } 
 
     try {
-        console.debug('[UPBIT-TRADING-BOT][-API CALL-] REQ-URL : ', url);
+        // console.debug('[UPBIT-TRADING-BOT][-API CALL-] REQ-URL : ', url);
         // console.debug('[UPBIT-TRADING-BOT][-API CALL-] REQ-HEAD : ', headers);
-        console.debug('[UPBIT-TRADING-BOT][-API CALL-] REQ-BODY : ', options);
+        // console.debug('[UPBIT-TRADING-BOT][-API CALL-] REQ-BODY : ', options);
 
         const response = await axios(options);
 

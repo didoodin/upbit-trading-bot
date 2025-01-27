@@ -14,11 +14,9 @@ exports.orders = async (req, res) => {
     }
 
     try {
-        console.debug('[UPBIT-TRADING-BOT][', code, '] REQ-BODY : [', params,']');
-        
+        // console.debug('[UPBIT-TRADING-BOT][', code, '] REQ-BODY : [', params,']');
         data = executeOrder(reqInfo);
-
-        console.debug('[UPBIT-TRADING-BOT][', code, '] RES-BODY : [', data, ']');
+        // console.debug('[UPBIT-TRADING-BOT][', code, '] RES-BODY : [', data, ']');
         return res.json(data);
     } catch (e) {
         console.error('[UPBIT-TRADING-BOT][', code, '] ERROR : ', e.message);

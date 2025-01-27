@@ -7,10 +7,10 @@ const timezone = require('dayjs/plugin/timezone');
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
-module.exports.koreaDate = dayjs().tz('Asia/Seoul');
-module.exports.koreaDateISO = dayjs().tz('Asia/Seoul').toISOString();
+const koreaDate =  new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString();
+const koreaDateISO = dayjs().tz('Asia/Seoul').toISOString();
 
-const getYesterdayDate = () => {
+const getYesterdayDate = async () => {
     const today = new Date();
     today.setDate(today.getDate() - 1); // 어제 날짜로 설정
     
@@ -21,4 +21,4 @@ const getYesterdayDate = () => {
     return `${year}-${month}-${day}`;
   };
 
-module.exports = { dayjs, getYesterdayDate }
+module.exports = { dayjs, koreaDate, koreaDateISO, getYesterdayDate }

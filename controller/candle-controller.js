@@ -1,4 +1,4 @@
-const { getCandle } = require('../service/candle-service');
+const { getCandle } = require('../service/market-service');
 
 // 분(Minute) 캔들
 const minute = async (req, res) => {
