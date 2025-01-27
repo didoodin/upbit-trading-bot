@@ -12,72 +12,72 @@ const api = ROUTE.indicators;
  * @returns 
  */
 const getIndicator = async (req, res) => {
-    // console.debug('[UPBIT-TRADING-BOT][-INDICATOR-] REQ-BODY : ', req);
+// console.debug('[UPBIT-TRADING-BOT][-INDICATOR-] REQ-BODY : ', req);
 
-    const path = req._parsedUrl && req._parsedUrl.path != null ? req._parsedUrl.path : '';
-    let code = '';
-    let ma = '';
-    let rsi = '';
-    let bb = '';
+  const path = req._parsedUrl && req._parsedUrl.path != null ? req._parsedUrl.path : '';
+  let code = '';
+  let ma = '';
+  let rsi = '';
+  let bb = '';
 
-    // 캔들 API 호출
-    let candle = {};
+  // 캔들 API 호출
+  let candle = {};
 
-    try {
-      if (path) {
-        console.info('[UPBIT-TRADING-BOT][-INDICATOR-] TYPE : [API]');
+  try {
+    if (path) {
+      console.info('[UPBIT-TRADING-BOT][-INDICATOR-] TYPE : [API]');
 
-        switch (path) {
-          case api.ma.path:
-            code = api.ma.code;
-            break;
-          case api.rsi.path:
-            code = api.rsi.code;
-            break;
-          case api.bb.path:
-            code = api.bb.code;
-            break;
-        }
-
-        candle = await getCandle(req);
-
-        if (!candle) {
-          console.error('[UPBIT-TRADING-BOT][-INDICATOR-] CANDLE IS NULL');
-          return null;  // candle이 없으면 null 반환
-        }
-      } else {
-        console.info('[UPBIT-TRADING-BOT][-INDICATOR-] TYPE : [TRADE]');
-
-        code = req.filter(item => item.code).map(item => item.code)[0];
-        candle = req.filter(item => !item.code); // code 속성이 없는 항목만 필터링
-
-        if (!candle) {
-          console.error('[UPBIT-TRADING-BOT][-INDICATOR-] CANDLE IS NULL');
-          return null;  // candle이 없으면 null 반환
-        } 
+      switch (path) {
+        case api.ma.path:
+          code = api.ma.code;
+          break;
+        case api.rsi.path:
+          code = api.rsi.code;
+          break;
+        case api.bb.path:
+          code = api.bb.code;
+          break;
       }
 
-      switch (code) {
-        case api.ma.code: // MA
-            ma = await makeMA(candle);
-            console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][MA][${code}] MA : ${ma}`);
-            return rsi;
-        case api.rsi.code: // RSI
-            rsi = await makeRSI(candle);
-            console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][RSI][${code}] RSI : ${rsi}`);
-            return rsi;
-        case api.bb.code: // BB
-            bb = await makeBB(candle);
-            console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][BB][${code}] ${bb}`);
-            return bb;
-        }
+      candle = await getCandle(req);
 
-      return { ma: ma, rsi: rsi, bb: bb };
-    } catch (e) {
-      console.error('[UPBIT-TRADING-BOT][-INDICATOR-] ERROR : ', e);
-      return e;
+      if (!candle) {
+        console.error('[UPBIT-TRADING-BOT][-INDICATOR-] CANDLE IS NULL');
+        return null;  // candle이 없으면 null 반환
+      }
+    } else {
+      console.info('[UPBIT-TRADING-BOT][-INDICATOR-] TYPE : [TRADE]');
+
+      code = req.filter(item => item.code).map(item => item.code)[0];
+      candle = req.filter(item => !item.code); // code 속성이 없는 항목만 필터링
+
+      if (!candle) {
+        console.error('[UPBIT-TRADING-BOT][-INDICATOR-] CANDLE IS NULL');
+        return null;  // candle이 없으면 null 반환
+      } 
     }
+
+    switch (code) {
+      case api.ma.code: // MA
+          ma = await makeMA(candle);
+          console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][MA][${code}] MA : ${ma}`);
+          return rsi;
+      case api.rsi.code: // RSI
+          rsi = await makeRSI(candle);
+          console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][RSI][${code}] RSI : ${rsi}`);
+          return rsi;
+      case api.bb.code: // BB
+          bb = await makeBB(candle);
+          console.info(`[UPBIT-TRADING-BOT][-INDICATOR-][BB][${code}] ${bb}`);
+          return bb;
+      }
+
+    return { ma: ma, rsi: rsi, bb: bb };
+  } catch (e) {
+    console.error('[UPBIT-TRADING-BOT][-INDICATOR-] ERROR : ', e);
+    return e;
   }
+}
 
   /**
  * 이동평균선 계산
@@ -85,26 +85,26 @@ const getIndicator = async (req, res) => {
  * @returns 
  */
 const makeMA = async (candleList, period) => {
+  const candleDatas = [];
+  const movingAverages = [];
+
   try {
-      const candleDatas = [];
-      const movingAverages = [];
+    for (let i = 0; i <= 5; i++) {
+      candleDatas.push(candleList.slice(i, i + period));
+    }
+    
+    for (const candleData of candleDatas) {
+      const tradePrices = candleData.map(candle => candle.trade_price).filter(tradePrice => tradePrice !== undefined);
 
-      for (let i = 0; i <= 5; i++) {
-        candleDatas.push(candleList.slice(i, i + period));
+      for (let i = 0; i <= tradePrices.length - period; i++) {
+        const slice = tradePrices.slice(i, i + period);
+        const average = slice.reduce((sum, value) => sum + value, 0) / period; // 평균 계산
+
+        movingAverages.push(average);
       }
-      
-      for (const candleData of candleDatas) {
-        const tradePrices = candleData.map(candle => candle.trade_price).filter(tradePrice => tradePrice !== undefined);
+    }
 
-        for (let i = 0; i <= tradePrices.length - period; i++) {
-          const slice = tradePrices.slice(i, i + period);
-          const average = slice.reduce((sum, value) => sum + value, 0) / period; // 평균 계산
-
-          movingAverages.push(average);
-        }
-      }
-  
-      return movingAverages;
+    return movingAverages;
   } catch (e) {
       console.error('[UPBIT-TRADING-BOT][-MA-] ERROR : ', e);
   }
@@ -124,24 +124,29 @@ const checkMA = async (candleList, marketId) => {
   const ma200 = await makeMA(candleList, 200);
   console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] MA(15) ',ma15,' || MA(200) ',ma200);
 
-  // 이평선 비교 후 주문 정보 사용여부 갱신
+  // 이평선 비교 후 주문 정보에 대한 사용여부 갱신
+  let disableTarget = '';
+
   if (ma15 < ma200 * 1.01) {
     console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] CROSS CHECK << DEAD CROSS >>');
-    const isExist = await supabase.selectTradeInfo({market : marketId, useYn : 'Y'});
+    const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'Y' });
 
     if (isExist) {
       console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] TRADE INFO : DISABLE');
       await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'N' });
+      // 주문 진행중인 종목 중 데드크로스에 들어간 종목은 사용여부 N으로 업데이트 후 해당 종목 리턴
+      disableTarget = marketId;
     }
   } else if (ma15 > ma200 * 0.99) {
     console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] CROSS CHECK << GODEN CROSS >>');
-    const isExist = await supabase.selectTradeInfo({market : marketId, useYn : 'N'});
+    const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'N' });
 
     if (isExist) {
       console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] TRADE INFO : ENABLE');
       await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'Y' });
     }
   } 
+  return disableTarget;
 }
 
 /**
@@ -150,8 +155,6 @@ const checkMA = async (candleList, marketId) => {
  * @returns 
  */
 async function makeRSI(candleList) {
-    console.info('[UPBIT-TRADING-BOT][-RSI-] RSI CHECK');
-
     try {
         if (!candleList || candleList.length === 0) {
             return null;

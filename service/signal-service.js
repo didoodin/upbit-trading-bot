@@ -25,15 +25,8 @@ const determineSignal = async (rsi, upperDistance, lowerDistance) => {
     const buy = await supabase.selectCommonConfig(API_CODE.RSI_BUY);
     const sell = await supabase.selectCommonConfig(API_CODE.RSI_SELL);
 
-    if (rsi < buy && lowerDistance <= API_CODE.DISTANCE) {
-        console.info('[UPBIT-TRADING-BOT] ********** BUY SIGNAL **********');
-        return 1; // 매수 신호
-    }
-
-    if (rsi > sell && upperDistance <= API_CODE.DISTANCE) {
-        console.info('[UPBIT-TRADING-BOT] ********** SELL SIGNAL **********');
-        return -1; // 매도 신호
-    }
+    if (rsi < buy && lowerDistance <= API_CODE.DISTANCE) return 1; // 매수 신호
+    if (rsi > sell && upperDistance <= API_CODE.DISTANCE) return -1; // 매도 신호
 
     return 0;
 };

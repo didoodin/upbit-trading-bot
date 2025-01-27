@@ -1,7 +1,6 @@
 let intervalId = {};
 
 function startInterval(userId) {
-    console.error("[UPBIT-TRADING-BOT] START BOT");
     intervalId = setInterval(() => {
         (async () => {
             const tradeService = require('../service/trade-service');
