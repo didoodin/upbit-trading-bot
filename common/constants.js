@@ -19,6 +19,15 @@ module.exports = {
           method: 'GET'
         }
       },
+      allMarket: {
+        route : '/market',
+        minute : {
+          code: 'MA-01',
+          desc: '종목 코드 조회',
+          path: '/all',
+          method: 'GET'
+        }
+      },
       candles: {
         route : '/candles',
         minute : {
@@ -30,14 +39,20 @@ module.exports = {
       },
       indicators: {
         route : '/indicators',
-        rsi : {
+        ma : {
           code: 'IA-01',
+          desc: 'MA',
+          path: '/ma',
+          method: 'GET'
+        },
+        rsi : {
+          code: 'IA-02',
           desc: 'RSI',
           path: '/rsi',
           method: 'GET'
         },
         bb : {
-          code: 'IA-02',
+          code: 'IA-03',
           desc: 'BB',
           path: '/bb',
           method: 'GET'

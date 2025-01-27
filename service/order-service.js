@@ -3,6 +3,12 @@ const api = ROUTE.orders;
 const supabase = require('../utils/supabase');
 let reqInfo = {};
 
+/**
+ * 주문 관련 API 요청 정보 세팅 분기
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
 const setOrderReqInfo = async (req, res) => {
     const _ = require('lodash');
     let path = req._parsedUrl.path;
@@ -39,8 +45,7 @@ const setOrderReqInfo = async (req, res) => {
  * @returns 
  */
 const executeOrder = async (req, res) => {
-    console.info('[UPBIT-TRADING-BOT][-ORDER-] START');
-    console.info('[UPBIT-TRADING-BOT][-ORDER-] REQ-BODY : ', req);
+    // console.info('[UPBIT-TRADING-BOT][-ORDER-] REQ-BODY : ', req);
     const { call } = require('../utils/api-client');
     let data = {};
 
@@ -111,7 +116,7 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
                     return accountBalance * 0.6;
                 } else {
                     console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] CALCULATE AMOUNT START : ', accountBalance);
-                    return await calculateAmount({ side, accountBalance, entryPrice }); // 20,000 초과 시 계산
+                    return await calculateAmount({ side, accountBalance, entryPrice });
                 }
  
             case API_CODE.SELL:
@@ -137,7 +142,6 @@ const calculateAmount = async (req, res) => {
     const entryPrice = req.entryPrice;
 
     try {
-        const supabase = require('../utils/supabase');
         let maxAllocation = await supabase.selectCommonConfig(API_CODE.MAX_ALLOCATION);
     
         const riskPercentage = 0.03;
@@ -200,4 +204,22 @@ const calculateAmount = async (req, res) => {
     }
 }
 
-module.exports = { setOrderReqInfo, checkOrderAmount, executeOrder };
+/**
+ * 손절 매도 진행
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+const executeCutLoss = async (req, res) => {
+    const { currentPrice, accountInfo, marketId } = req;
+    const targetCoin = accountInfo.find(item => item.currency === marketId);
+    const volume = targetCoin.balance; // 보유 수량
+
+    // 손절 매도에만 isCutLoss를 넘겨줌
+    const reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice, isCutLoss : true };
+
+    console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}][SELL] CUT LOSS !!!!!`);
+    return await executeOrder(reqParam); // 손절 매도
+};
+
+module.exports = { setOrderReqInfo, checkOrderAmount, executeOrder, executeCutLoss };
