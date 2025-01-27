@@ -120,8 +120,6 @@ const makeMA = async (candleList, period) => {
  * @param {*} res 
  */
 const checkMA = async (candleList, marketId) => {
-  let isProcessing = false;
-
   const ma15 = await makeMA(candleList.slice(0, 15), 15);
   const ma200 = await makeMA(candleList, 200);
   console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] MA(15) ',ma15,' || MA(200) ',ma200);
@@ -143,11 +141,7 @@ const checkMA = async (candleList, marketId) => {
       console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] TRADE INFO : ENABLE');
       await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'Y' });
     }
-
-    isProcessing = true;
   } 
-
-  return isProcessing;
 }
 
 /**

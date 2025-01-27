@@ -18,7 +18,6 @@ const KRW = 'KRW';
  * @returns 
  */
 const executeTrade = async (req, res) => {
-    const userId = req;
     let result = '';
 
     try {
@@ -26,101 +25,100 @@ const executeTrade = async (req, res) => {
         let marketId = '';
         let candleList = {};
 
-        // // 종목 코드 조회
-        // const allMarkets = await getAllMarket();
-        // console.info(allMarkets);
+            // // 종목 코드 조회
+            // const allMarkets = await getAllMarket();
+            // console.info(allMarkets);
 
-        // 주문 요청 정보 조회
-        let tradeInfos = await supabase.selectTradeInfo({});
-
-        // 주문 요청 랜덤 셔플
-        tradeInfos = _.shuffle(tradeInfos);
-        
-        if (tradeInfos && tradeInfos.length > 0) {
-            console.info(" ######################################################################################### ");
-
+            // 주문 요청 정보 조회 (ALL)
+            let tradeInfos = await supabase.selectTradeInfo({});
+            
+            if (tradeInfos && tradeInfos.length > 0) {
+                console.info(" ######################################################################################### ");
+                
             for (let i = 0; i < tradeInfos.length; i++) {
                 const tradeInfo = tradeInfos[i];
                 marketId = tradeInfo.market;
                 period = tradeInfo.period;
                 
+                // 현재가 정보
+                const ticker = await getTicker({ markets : ('KRW-' + marketId) }); 
+                const currentPrice = ticker[0].trade_price; // 현재가 정보
+                console.info('[UPBIT-TRADING-BOT][-TRADE-][',marketId,'] CURRENT PRICE ', currentPrice);
+
+                // 캔들 조회
+                candleList = await getCandle({ minutes: period, market: ('KRW-' + marketId), count: COUNT });
+
+                // 이동평균선 체크 & 주문 정보 사용여부 갱신
+                await checkMA(candleList, marketId);
+            }
+                
+            // 이평선 체크 후 갱신된 사용여부에 따라 주문 정보 조회
+            tradeInfos = await supabase.selectTradeInfo({ useYn : 'Y' });
+
+            // 주문 요청 랜덤 셔플
+            tradeInfos = _.shuffle(tradeInfos);
+
+            for (let i = 0; i < tradeInfos.length; i++) {
                 try {
-                    // 현재가 정보
-                    const ticker = await getTicker({ markets : ('KRW-' + marketId) }); 
-                    const currentPrice = ticker[0].trade_price; // 현재가 정보
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-][',marketId,'] CURRENT PRICE ', currentPrice);
+                // // RSI 계산
+                // candleList.push({ code: ROUTE.indicators.rsi.code });
+                // const rsi = await makeRSI(candleList);
+                // console.info("[UPBIT-TRADING-BOT][-TRADE-][",marketId,"] RSI : ", rsi);
 
-                    // 캔들 조회
-                    candleList = await getCandle({ minutes: period, market: ('KRW-' + marketId), count: COUNT });
+                // // 볼린저 밴드 계산
+                // candleList.push({ code: ROUTE.indicators.bb.code });
+                // const bb = await makeBB(candleList);
+                // console.info("[UPBIT-TRADING-BOT][-TRADE-][",marketId,"] BB : ", bb);
 
-                    // 이동평균선 체크 후 주문 진행 여부 판단
-                    const isProcessing = await checkMA(candleList, marketId);
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-][',marketId,'] PROCESSING STATUS : ', isProcessing);
+                // // 신호 체크
+                // const side = await checkSignal({ currentPrice, rsi, bb });
+                // console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] SIGNAL : ${side}`);
 
-                    if (isProcessing) {
-                        // // RSI 계산
-                        // candleList.push({ code: ROUTE.indicators.rsi.code });
-                        // const rsi = await makeRSI(candleList);
-                        // console.info("[UPBIT-TRADING-BOT][-TRADE-][",marketId,"] RSI : ", rsi);
+                // // 계좌 조회
+                // const accountInfo = await getAccounts({});
 
-                        // // 볼린저 밴드 계산
-                        // candleList.push({ code: ROUTE.indicators.bb.code });
-                        // const bb = await makeBB(candleList);
-                        // console.info("[UPBIT-TRADING-BOT][-TRADE-][",marketId,"] BB : ", bb);
+                // // 코인 존재 여부 및 목표 가격
+                // const { targetCoin, avgBuyPrice } = await getTargetCoinInfo(accountInfo, marketId);
 
-                        // // 신호 체크
-                        // const side = await checkSignal({ currentPrice, rsi, bb });
-                        // console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] SIGNAL : ${side}`);
+                // // 손절 여부 체크 및 진행
+                // if (targetCoin) {
+                //     await handleCutLoss(currentPrice, avgBuyPrice, accountInfo, marketId);
+                // }
 
-                        // // 계좌 조회
-                        // const accountInfo = await getAccounts({});
+                // switch (side) {
+                //     case API_CODE.BUY:
+                //         console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** BUY START **********`);
+                //         const balance = accountInfo.find(item => item.currency === KRW)?.balance; 
 
-                        // // 코인 존재 여부 및 목표 가격
-                        // const { targetCoin, avgBuyPrice } = await getTargetCoinInfo(accountInfo, marketId);
+                //         // 주문 정보 계산
+                //         const price = await checkOrderAmount({ side, accountBalance: balance, entryPrice: currentPrice });
 
-                        // // 손절 여부 체크 및 진행
-                        // if (targetCoin) {
-                        //     await handleCutLoss(currentPrice, avgBuyPrice, accountInfo, marketId);
-                        // }
+                //         if (price !== 0) {
+                //             const reqParam = { market: ('KRW-' + marketId), side, price: price.toString(), ord_type: 'price' };
+                //             result = await handleBuyOrder(reqParam, currentPrice, targetCoin, Number(avgBuyPrice));
+                //         }
+                //         console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** BUY END **********`);
+                //         break;
 
-                        // switch (side) {
-                        //     case API_CODE.BUY:
-                        //         console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** BUY START **********`);
-                        //         const balance = accountInfo.find(item => item.currency === KRW)?.balance; 
+                //     case API_CODE.SELL:
+                //         console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** SELL START **********`);
+                //         result = await handleSellOrder({}, accountInfo, currentPrice, marketId);
+                //         console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** SELL END **********`);
+                //         break;
 
-                        //         // 주문 정보 계산
-                        //         const price = await checkOrderAmount({ side, accountBalance: balance, entryPrice: currentPrice });
-
-                        //         if (price !== 0) {
-                        //             const reqParam = { market: ('KRW-' + marketId), side, price: price.toString(), ord_type: 'price' };
-                        //             result = await handleBuyOrder(reqParam, currentPrice, targetCoin, Number(avgBuyPrice));
-                        //         }
-                        //         console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** BUY END **********`);
-                        //         break;
-
-                        //     case API_CODE.SELL:
-                        //         console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** SELL START **********`);
-                        //         result = await handleSellOrder({}, accountInfo, currentPrice, marketId);
-                        //         console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** SELL END **********`);
-                        //         break;
-
-                        //     default:
-                        //         console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** ORDER WAIT **********`);
-                        //         console.info(" ######################################################################################### ");
-                        //         continue;
-                        // }
-                    } else {
-                        // await executeCutLoss({ currentPrice, accountInfo, marketId });
-                    }
-
-                    console.info(" ######################################################################################### ");
-                } catch (e) {
-                    console.error("[UPBIT-TRADING-BOT][-TRADE-] TRADE ERROR : ", e);
-                    // 해당 항목에서 오류 발생 시 해당 거래만 건너뛰고 계속 진행
-                    continue;
-                }
+                //     default:
+                //         console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}] ********** ORDER WAIT **********`);
+                //         console.info(" ######################################################################################### ");
+                //         continue;
+                // }
+                console.info(" ######################################################################################### ");
+            } catch (e) {
+                console.error("[UPBIT-TRADING-BOT][-TRADE-] TRADE ERROR : ", e);
+                // 해당 항목에서 오류 발생 시 해당 거래만 건너뛰고 계속 진행
+                continue;
             }
         }
+    }
         return result;
     } catch (e) {
         console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
