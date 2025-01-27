@@ -122,27 +122,27 @@ const makeMA = async (candleList, period) => {
 const checkMA = async (candleList, marketId) => {
   const ma15 = await makeMA(candleList.slice(0, 15), 15);
   const ma200 = await makeMA(candleList, 200);
-  console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] MA(15) ',ma15,' || MA(200) ',ma200);
+  console.info('MA(15) ',ma15,' || MA(200) ',ma200);
 
   // 이평선 비교 후 주문 정보에 대한 사용여부 갱신
   let disableTarget = '';
 
   if (ma15 < ma200 * 1.01) {
-    console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] CROSS CHECK << DEAD CROSS >>');
+    console.info('CROSS CHECK << DEAD CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'Y' });
 
-    if (isExist) {
-      console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] TRADE INFO : DISABLE');
+    if (isExist.length !== 0) {
+      console.info('TRADE INFO : DISABLE');
       await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'N' });
       // 주문 진행중인 종목 중 데드크로스에 들어간 종목은 사용여부 N으로 업데이트 후 해당 종목 리턴
       disableTarget = marketId;
     }
   } else if (ma15 > ma200 * 0.99) {
-    console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] CROSS CHECK << GODEN CROSS >>');
+    console.info('CROSS CHECK << GODEN CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'N' });
 
-    if (isExist) {
-      console.info('[UPBIT-TRADING-BOT][-MA-][',marketId,'] TRADE INFO : ENABLE');
+    if (isExist.length !== 0) {
+      console.info('TRADE INFO : ENABLE');
       await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'Y' });
     }
   } 
