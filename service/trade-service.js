@@ -66,7 +66,7 @@ const executeTrade = async (req, res) => {
                     console.info('SIGNAL : [', side, ']');
 
                     // // 손절 여부 체크 및 진행
-                    // if (targetCoin) await handleCutLoss(currentPrice, avgBuyPrice, accountInfo, marketId);
+                    if (targetCoin) await handleCutLoss(currentPrice, avgBuyPrice, accountInfo, marketId);
 
                     switch (side) {
                         case API_CODE.BUY:
@@ -112,6 +112,9 @@ const executeTrade = async (req, res) => {
     return result;
 }
 
+/**
+ * 전체 종목 크로스 체크
+ */
 const preOrderCrossCheck = async () => {
     // 주문 요청 정보 조회
     let tradeInfos = await supabase.selectTradeInfo({});
@@ -142,7 +145,7 @@ const preOrderCrossCheck = async () => {
 
                 // 코인 존재 여부 및 목표 가격
                 const { targetCoin, avgBuyPrice } = await getTargetCoinInfo(accountInfo, disableTargetId);
-                // if (targetCoin) await handleCutLoss(currentPrice, avgBuyPrice, accountInfo, disableTargetId);
+                if (targetCoin) await handleCutLoss(currentPrice, avgBuyPrice, accountInfo, disableTargetId);
             }
         console.info(' ------------------------------------------------------------------------------------ ');
         }

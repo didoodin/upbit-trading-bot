@@ -112,9 +112,9 @@ const makeMA = async (candleList, period) => {
 
 /**
  * 이동평균선 크로스 체크
- * 단기 이평선(15) / 장기 이평선(200) 기준으로 차이(0.5%) 비교
- * 교차 지점이 아닌 안정권 체크를 위해 0.5 비율 체크
- * 단기 이평선 > 장기 이평선 (꼴든 크로스) : 주문 진행
+ * 단기 이평선(15) / 장기 이평선(200) 기준으로 차이 비교
+ * 교차 지점이 아닌 안정권 체크를 위해 0.7 비율 체크
+ * 단기 이평선 > 장기 이평선 (골든 크로스) : 주문 진행
  * 단기 이평선 < 장기 이평선 (데드 크로스) : 주문 미진행 / 전량 매도
  * @param {*} req 
  * @param {*} res 
@@ -127,7 +127,7 @@ const checkMA = async (candleList, marketId) => {
   // 이평선 비교 후 주문 정보에 대한 사용여부 갱신
   let disableTarget = '';
 
-  if (ma15 < ma200 * 1.01) {
+  if (ma15 < ma200 * 1.008) {
     console.info('CROSS CHECK << DEAD CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'Y' });
 
@@ -137,7 +137,7 @@ const checkMA = async (candleList, marketId) => {
       // 주문 진행중인 종목 중 데드크로스에 들어간 종목은 사용여부 N으로 업데이트 후 해당 종목 리턴
       disableTarget = marketId;
     }
-  } else if (ma15 > ma200 * 0.99) {
+  } else if (ma15 > ma200 * 0.992) {
     console.info('CROSS CHECK << GODEN CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'N' });
 
