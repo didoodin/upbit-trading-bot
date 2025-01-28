@@ -70,7 +70,8 @@ const selectTradeInfo = async (req, res) => {
       .select('*')
       .eq('user_id', userId)
       .eq('use_yn', req.useYn)
-      .eq('market', req.market));
+      .eq('market', req.market))
+      .single();
   } else {
     ({ data, error } = await supabase
       .from('tb_trade_info')
@@ -87,6 +88,34 @@ const selectTradeInfo = async (req, res) => {
 };
 
 /**
+ * 주문 정보 테이블 갱신
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+const updateTradeInfo = async (req, res) => {
+  const { info_seq, market, period } = req;
+
+  const { data, error } = await supabase
+  .from('tb_trade_info')  // 'orders' 테이블을 업데이트
+  .update({
+    market: market,
+    period: period,
+    use_yn: 'Y',
+    upd_dt: koreaDate
+  })
+  .eq('info_seq', info_seq)
+  .eq('user_id', userId);
+
+  if (error) {
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      return null;
+  }
+  
+  return data;
+};
+
+/**
  * 주문 요청 정보 사용여부 갱신
  * @param {*} req 
  * @param {*} res 
@@ -100,6 +129,47 @@ const updateTradeInfoUseYn = async (req, res) => {
     upd_dt: koreaDate, 
   })
   .eq('market', req.market)
+  .eq('user_id', userId);
+
+  if (error) {
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      return null;
+  }
+  
+  return data;
+};
+
+/**
+ * 예비 주문 정보 테이블 조회
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+const selectWaitTradeInfo = async (req, res) => {
+  const { data, error } = await supabase
+    .from('tb_wait_trade_info')
+    .select('*')
+    .eq('user_id', userId);
+
+    if (error) {
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      return null;
+    }
+    
+    return data;
+};
+
+const updateWaitTradeInfo = async (req, res) => {
+  const { info_seq, market, period } = req;
+
+  const { data, error } = await supabase
+  .from('tb_wait_trade_info')  // 'orders' 테이블을 업데이트
+  .update({
+    market: market,
+    period: period,
+    upd_dt: koreaDate
+  })
+  .eq('info_seq', info_seq)
   .eq('user_id', userId);
 
   if (error) {
@@ -222,4 +292,17 @@ const insertDailyCalcStat = async (req, res) => {
   return data;
 };
 
-module.exports = { selectUserById, updateLoginDtById, selectTradeInfo, updateTradeInfoUseYn, insertTradeHist, selectCommonConfig, selectTradeHistByTradeDt, selectDailyCalcStatByTradeDt, insertDailyCalcStat };
+module.exports = {
+  insertDailyCalcStat,
+  insertTradeHist,
+  selectCommonConfig,
+  selectDailyCalcStatByTradeDt,
+  selectTradeHistByTradeDt,
+  selectTradeInfo,
+  selectUserById,
+  selectWaitTradeInfo,
+  updateLoginDtById,
+  updateTradeInfo,
+  updateTradeInfoUseYn,
+  updateWaitTradeInfo
+};
