@@ -101,7 +101,7 @@ const updateTradeInfo = async (req, res) => {
   .update({
     market: market,
     period: period,
-    use_yn: 'Y',
+    use_yn: 'N',
     upd_dt: koreaDate
   })
   .eq('info_seq', info_seq)
