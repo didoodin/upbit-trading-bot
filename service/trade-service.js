@@ -153,6 +153,7 @@ const preOrderCrossCheck = async (req, res) => {
 
                 // 데드크로스 도달 시 손절 매도
                 if (targetCoin) {
+                    console.info('DEAD CROSS : CUT LOSS !!');
                     const volume = targetCoin.balance; // 보유 수량
                     reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice, isCutLoss : true };
                     return await executeOrder(reqParam);
