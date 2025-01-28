@@ -56,16 +56,27 @@ const updateLoginDtById = async (req, res) => {
  * @returns 
  */
 const selectTradeInfo = async (req, res) => {
-  let query = supabase
-              .from('tb_trade_info')
-              .select('*')
-              .eq('user_id', userId);
+  let data, error;
 
-  // 조건이 있을 경우 쿼리 추가
-  if (req.useYn) query = query.eq('use_yn', req.useYn);
-  if (req.market) query = query.eq('market', req.market);
-
-  const { data, error } = await query;
+  if (req.useYn) {
+    ({ data, error } = await supabase
+      .from('tb_trade_info')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('use_yn', req.useYn));
+  } else if (req.market) {
+    ({ data, error } = await supabase
+      .from('tb_trade_info')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('use_yn', req.useYn)
+      .eq('market', req.market));
+  } else {
+    ({ data, error } = await supabase
+      .from('tb_trade_info')
+      .select('*')
+      .eq('user_id', userId));
+  }
 
   if (error) {
       console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
