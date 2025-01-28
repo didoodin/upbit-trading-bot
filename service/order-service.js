@@ -109,13 +109,13 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
         switch (side) {
             case API_CODE.BUY:
                 if (accountBalance >= 5000 && accountBalance <= 10000) { // 계좌 잔액 5,000 ~ 10,000원 시 전량 매수
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] INSUFFICIENT FUNDS, FULL PURCHASE. : ', accountBalance);
+                    console.info('[BUY] INSUFFICIENT FUNDS, FULL PURCHASE. : ', accountBalance);
                     return accountBalance;
                 } else if (accountBalance > 10000 && accountBalance <= 20000) { // 계좌 잔액 10,000 ~ 20,000원 시 계좌 잔액의 0.6%
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] TARGET ORDER AMOUNT : ', (accountBalance * 0.6));
+                    console.info('[BUY] TARGET ORDER AMOUNT : ', (accountBalance * 0.6));
                     return accountBalance * 0.6;
                 } else {
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] CALCULATE AMOUNT START : ', accountBalance);
+                    console.info('[BUY] CALCULATE AMOUNT START : ', accountBalance);
                     return await calculateAmount({ side, accountBalance, entryPrice });
                 }
  
@@ -123,7 +123,7 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
                 return await calculateAmount({ side, accountBalance, entryPrice }); // SELL 조건 처리
             }
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-TRADE-] CHECK ORDER AMOUNT ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
         return e;
     }
 }
@@ -188,18 +188,18 @@ const calculateAmount = async (req, res) => {
         // console.debug(orderPrice);
         
         if (orderPrice < minOrderPrice) {
-            console.error('[UPBIT-TRADING-BOT][-TRADE-][BUY] INSUFFICIENT BALANCE');
+            console.error('[BUY] INSUFFICIENT BALANCE');
             return 0; // 주문 불가능
         } 
     
         if (side === API_CODE.BUY) {
-            console.info('[UPBIT-TRADING-BOT][-TRADE-][BUY] TARGET ORDER AMOUNT : ', orderPrice);
+            console.info('[BUY] TARGET ORDER AMOUNT : ', orderPrice);
             return orderPrice;
         } else if (side === API_CODE.SELL) {
             return orderQuantity;
         }
     } catch(e) {
-        console.error('[UPBIT-TRADING-BOT][-TRADE-] CALCULATE AMOUNT ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
         return e;
     }
 }
@@ -218,7 +218,7 @@ const executeCutLoss = async (req, res) => {
     // 손절 매도에만 isCutLoss를 넘겨줌
     const reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice, isCutLoss : true };
 
-    console.info(`[UPBIT-TRADING-BOT][-TRADE-][${marketId}][SELL] CUT LOSS !!!!!`);
+    console.info(`[SELL] CUT LOSS !!!!!`);
     return await executeOrder(reqParam); // 손절 매도
 };
 

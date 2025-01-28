@@ -49,7 +49,7 @@ const getCandle = async (req, res) => {
         data = await call(ROUTE.candles.minute.method, (ROUTE.candles.route + ROUTE.candles.minute.path + unit), params);
         return data;
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-CANDLE-] ERROR : ', e.message);
+        console.error('[UPBIT-TRADING-BOT][-CANDLE-] ERROR : ', e);
         return e;
     } 
 };
