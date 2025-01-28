@@ -54,6 +54,7 @@ const getDailyCalcution = async (req, res) => {
 
       if (!count) {
         await supabase.insertDailyCalcStat({ tradeDt : dailyCalcStat.trade_dt, totalPrice : dailyCalcStat.total_price });
+        console.info('[UPBIT-TRADING-BOT][SCHEDULER] INSERT DAILY CALC STAT SUCCESS');
       }
     }
 }

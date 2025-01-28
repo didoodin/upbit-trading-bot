@@ -122,30 +122,32 @@ const checkMA = async (candleList, marketId) => {
   const ma15 = await makeMA(candleList.slice(0, 15), 15);
   const ma200 = await makeMA(candleList, 200);
   const diffRate = await calcDiffRate(ma15, ma200);
-  console.info('MA(15)',ma15,' || MA(200)',ma200, ' -> DIFF RATE : ', diffRate);
+  console.info('MA(15)',ma15,' || MA(200)',ma200,' -> DIFF RATE : ',diffRate);
 
   // 이평선 비교 후 주문 정보에 대한 사용여부 갱신
   let disableTarget = '';
 
-  if (ma15 < ma200 * 1.008) {
+  if (ma15 < ma200 * 0.992) { // 0.8% 이상 작을 때 (데드크로스)
     console.info('CROSS CHECK : << DEAD CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'Y' });
-
+  
     if (isExist.length !== 0) {
       console.info('TRADE INFO : DISABLE');
       await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'N' });
       // 주문 진행중인 종목 중 데드크로스에 들어간 종목은 사용여부 N으로 업데이트 후 해당 종목 리턴
       disableTarget = marketId;
     }
-  } else if (ma15 > ma200 * 0.992) {
-    console.info('CROSS CHECK : << GODEN CROSS >>');
+  } else if (ma15 > ma200 * 1.004) { // 0.4% 이상 클 때 (골든크로스)
+    console.info('CROSS CHECK : << GOLDEN CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'N' });
-
+  
     if (isExist.length !== 0) {
       console.info('TRADE INFO : ENABLE');
       await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'Y' });
     }
-  } 
+  } else {
+    console.info('CROSS CHECK : << NO ACTION >>'); // 두 값의 차이가 0.4%에서 0.8% 사이일 때는 아무 작업도 안함
+  }
 
   return disableTarget;
 }
@@ -160,7 +162,8 @@ async function calcDiffRate(value1, value2) {
   const difference = Math.abs(value1 - value2); // 두 값의 절대 차이
   const smallerValue = Math.min(value1, value2); // 작은 값
   const percentDiff = (difference / smallerValue) * 100; // 비율 계산
-  return percentDiff.toFixed(2); // 소수점 2자리까지 반환
+  let sign = value1 > value2 ? '+' : '-'; // ma15가 더 크면 '+' , ma200이 더 크면 '-'
+  return `${sign}${percentDiff.toFixed(2)}`; // 부호를 붙여서 반환
 }
 
 /**

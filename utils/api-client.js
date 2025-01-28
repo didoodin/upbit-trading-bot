@@ -49,37 +49,40 @@ async function call(method, endpoint, body = {}) {
         // console.debug('[UPBIT-TRADING-BOT][-API CALL-] REQ-BODY : ', options);
 
         const response = await axios(options);
-
-        // 해당 시간 내 초과된 요청에 대해서 429 Too Many Requests 오류 발생
-        if (response.status_code === 429) {
-            // 요청 가능 횟수 확보 위한 대기 시간
-            let sleepTime = 0.3;
-            
-            // 요청 가능 횟수
-            let remainReqCnt = response.headers['remaining-req'];
-
-            // 정규 표현식을 사용하여 sec 값을 추출
-            const match = remainReqCnt.match(/sec=(\d+)/);
-
-            if (match) {
-                const secValue = match[1];  // sec 값
-                console.error('[UPBIT-TRADING-BOT][-API CALL-] REQUEST LIMIT ->> REMAIN COUNT : ', secValue);
-            }
-
-            sleep(sleepTime);
-        }
-
+        await getRemainReqCnt(response);
         data = response.data;
 
         return data;
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT] API CONNECT ERROR : ', e);
-        return e;
+        // 해당 시간 내 초과된 요청에 대해서 429 Too Many Requests 오류 발생
+        if (e.response && e.response.status === 429) {
+            // 요청 가능 횟수 확보 위한 대기 시간
+            let sleepTime = 0.3;
+            
+            // 요청 가능 횟수
+            await getRemainReqCnt(e.response);
+            await sleep(sleepTime);
+        } else {
+            console.error('[UPBIT-TRADING-BOT] ERROR : ', e);
+            return e;
+        }
     }
 }
 
-function sleep(ms) {
+async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function getRemainReqCnt(res) {
+    let remainReqCnt = res.headers['remaining-req'];
+
+    // 정규 표현식을 사용하여 sec 값을 추출
+    const match = remainReqCnt.match(/sec=(\d+)/);
+
+    if (match) {
+        const secValue = match[1];  // sec 값
+        // console.error('[-API CALL-] REMAIN REQUEST COUNT : [',secValue,']');
+    }
 }
 
 module.exports = { call }

@@ -18,11 +18,15 @@ const KRW = 'KRW';
  * @returns 
  */
 const executeTrade = async (req, res) => {
+    let accountInfo;
     let result;
 
     try {
+        // 계좌 조회
+        accountInfo = await getAccounts({});
+
         // 주문 진행 전 전체 종목에 대한 크로스 체크
-        await preOrderCrossCheck();
+        await preOrderCrossCheck({ accountInfo });
 
         // 주문 요청 정보 조회
         let tradeInfos = await supabase.selectTradeInfo({ useYn: 'Y' });
@@ -34,8 +38,8 @@ const executeTrade = async (req, res) => {
             tradeInfos = _.shuffle(tradeInfos);
 
             for (let i = 0; i < tradeInfos.length; i++) {
-                const marketId = tradeInfos[i].market;
-                const period = tradeInfos[i].period;
+                let marketId = tradeInfos[i].market;
+                let period = tradeInfos[i].period;
 
             try {
                 console.info('[UPBIT-TRADING-BOT][-TRADE-][',marketId,']');
@@ -56,9 +60,6 @@ const executeTrade = async (req, res) => {
                 const ticker = await getTicker({ markets: ('KRW-' + marketId) });
                 const currentPrice = ticker[0].trade_price;
                 console.info('CURRENT PRICE : ', currentPrice);
-
-                // 계좌 조회
-                const accountInfo = await getAccounts({});
 
                 // 코인 존재 여부 및 목표 가격
                 const { targetCoin, avgBuyPrice } = await getTargetCoinInfo(accountInfo, marketId);
@@ -118,7 +119,7 @@ const executeTrade = async (req, res) => {
 /**
  * 전체 종목 크로스 체크
  */
-const preOrderCrossCheck = async () => {
+const preOrderCrossCheck = async (req, res) => {
     console.info(' ==================================================================================== ');
 
     // 주문 요청 정보 조회
@@ -126,9 +127,8 @@ const preOrderCrossCheck = async () => {
 
     if (tradeInfos && tradeInfos.length > 0) {
         for (let i = 0; i < tradeInfos.length; i++) {
-            const tradeInfo = tradeInfos[i];
-            const marketId = tradeInfo.market;
-            const period = tradeInfo.period;
+            const marketId = tradeInfos[i].market;
+            const period = tradeInfos[i].period;
 
             console.info('[UPBIT-TRADING-BOT][-TRADE-][',marketId,']');
             console.info(' ------------------------------------------------------------------------------------ ');
@@ -146,11 +146,17 @@ const preOrderCrossCheck = async () => {
                 console.info('CURRENT PRICE : ', currentPrice);
 
                 // 계좌 조회
-                const accountInfo = await getAccounts({});
+                const accountInfo = req.accountInfo;
 
                 // 코인 존재 여부 및 목표 가격
-                const { targetCoin, avgBuyPrice } = await getTargetCoinInfo(accountInfo, disableTargetId);
-                if (targetCoin) await handleCutLoss(currentPrice, avgBuyPrice, accountInfo, disableTargetId);
+                const { targetCoin } = await getTargetCoinInfo(accountInfo, disableTargetId);
+
+                // 데드크로스 도달 시 손절 매도
+                if (targetCoin) {
+                    const volume = targetCoin.balance; // 보유 수량
+                    reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice, isCutLoss : true };
+                    return await executeOrder(reqParam);
+                }
             }
         console.info(' ------------------------------------------------------------------------------------ ');
         }
@@ -201,7 +207,7 @@ const handleSellOrder = async (reqParam, accountInfo, currentPrice, marketId) =>
     }
 
     // 목표 단가 도달 여부 체크
-    const isTargetReached = await getTargetReached(marketId, API_CODE.SELL, currentPrice, targetCoin.avg_buy_price);
+    const isTargetReached = await getTargetReached(API_CODE.SELL, currentPrice, targetCoin.avg_buy_price);
 
     if (!isTargetReached) {
         console.info('[SELL] TARGET NOT REACHED');
@@ -233,7 +239,7 @@ const getTargetCoinInfo = (accountInfo, marketId) => {
  * @param {number} req.avgBuyPrice - 평균 매수 가격
  * @returns {boolean} 목표 도달 여부
  */
-const getTargetReached = async (marketId, side, currentPrice, avgBuyPrice) => {
+const getTargetReached = async (side, currentPrice, avgBuyPrice) => {
     let code = '';
     let targetRatio = 0;
     let targetPrice = 0;
