@@ -28,6 +28,8 @@ const executeTrade = async (req, res) => {
         let tradeInfos = await supabase.selectTradeInfo({ useYn: 'Y' });
 
         if (tradeInfos && tradeInfos.length > 0) {
+            console.info(' ==================================================================================== ');
+
             // 주문 요청 랜덤 셔플
             tradeInfos = _.shuffle(tradeInfos);
 
@@ -35,73 +37,74 @@ const executeTrade = async (req, res) => {
                 const marketId = tradeInfos[i].market;
                 const period = tradeInfos[i].period;
 
-                try {
-                    console.info('[UPBIT-TRADING-BOT][-TRADE-][',marketId,']');
-                    console.info(' ------------------------------------------------------------------------------------ ');
+            try {
+                console.info('[UPBIT-TRADING-BOT][-TRADE-][',marketId,']');
+                console.info(' ------------------------------------------------------------------------------------ ');
 
-                    // 캔들 조회
-                    let candleList = await getCandle({ minutes: period, market: ('KRW-' + marketId), count: COUNT });
+                // 캔들 조회
+                let candleList = await getCandle({ minutes: period, market: ('KRW-' + marketId), count: COUNT });
 
-                    // RSI 계산
-                    const rsi = await makeRSI(candleList);
-                    console.info('RSI : ', rsi);
+                // RSI 계산
+                const rsi = await makeRSI(candleList);
+                console.info('RSI : ', rsi);
 
-                    // 볼린저 밴드 계산
-                    const bb = await makeBB(candleList);
-                    console.info('BB : ', bb);
+                // 볼린저 밴드 계산
+                const bb = await makeBB(candleList);
+                console.info('BB : ', bb);
 
-                    // 현재가 정보
-                    const ticker = await getTicker({ markets: ('KRW-' + marketId) });
-                    const currentPrice = ticker[0].trade_price;
-                    console.info('CURRENT PRICE : ', currentPrice);
+                // 현재가 정보
+                const ticker = await getTicker({ markets: ('KRW-' + marketId) });
+                const currentPrice = ticker[0].trade_price;
+                console.info('CURRENT PRICE : ', currentPrice);
 
-                    // 계좌 조회
-                    const accountInfo = await getAccounts({});
+                // 계좌 조회
+                const accountInfo = await getAccounts({});
 
-                    // 코인 존재 여부 및 목표 가격
-                    const { targetCoin, avgBuyPrice } = await getTargetCoinInfo(accountInfo, marketId);
+                // 코인 존재 여부 및 목표 가격
+                const { targetCoin, avgBuyPrice } = await getTargetCoinInfo(accountInfo, marketId);
 
-                    // 신호 체크
-                    const side = await checkSignal({ currentPrice, rsi, bb });
-                    console.info('SIGNAL : [', side, ']');
+                // 신호 체크
+                const side = await checkSignal({ currentPrice, rsi, bb });
+                console.info('SIGNAL : [', side, ']');
 
-                    // // 손절 여부 체크 및 진행
-                    if (targetCoin) await handleCutLoss(currentPrice, avgBuyPrice, accountInfo, marketId);
+                // // 손절 여부 체크 및 진행
+                if (targetCoin) await handleCutLoss(currentPrice, avgBuyPrice, accountInfo, marketId);
 
-                    switch (side) {
-                        case API_CODE.BUY:
-                            console.info('ORDER STATUS : ********** BUY START **********');
-                            const balance = accountInfo.find(item => item.currency === KRW)?.balance;
+                switch (side) {
+                    case API_CODE.BUY:
+                        console.info('ORDER STATUS : ********** BUY START **********');
+                        const balance = accountInfo.find(item => item.currency === KRW)?.balance;
 
-                            // 주문 정보 계산
-                            const price = await checkOrderAmount({ side, accountBalance: balance, entryPrice: currentPrice });
+                        // 주문 정보 계산
+                        const price = await checkOrderAmount({ side, accountBalance: balance, entryPrice: currentPrice });
 
-                            if (price !== 0) {
-                                const reqParam = { market: ('KRW-' + marketId), side, price: price.toString(), ord_type: 'price' };
-                                result = await handleBuyOrder(reqParam, currentPrice, targetCoin, Number(avgBuyPrice));
-                            }
-                            console.info('ORDER STATUS : ********** BUY END **********');
-                            console.info(' ------------------------------------------------------------------------------------ ');
-                            break;
-
-                        case API_CODE.SELL:
-                            console.info('ORDER STATUS : ********** SELL START **********');
-                            result = await handleSellOrder({}, accountInfo, currentPrice, marketId);
-                            console.info('ORDER STATUS : ********** SELL END **********');
-                            console.info(' ------------------------------------------------------------------------------------ ');
-                            break;
-
-                        default:
-                            console.info('ORDER STATUS : ********** ORDER WAIT **********');
-                            console.info(' ------------------------------------------------------------------------------------ ');
-                            continue;
+                        if (price !== 0) {
+                            const reqParam = { market: ('KRW-' + marketId), side, price: price.toString(), ord_type: 'price' };
+                            result = await handleBuyOrder(reqParam, currentPrice, targetCoin, Number(avgBuyPrice));
                         }
-                    } catch (e) {
-                        console.error('ERROR : ', e);
-                        // 해당 항목에서 오류 발생 시 해당 거래만 건너뛰고 계속 진행
+                        console.info('ORDER STATUS : ********** BUY END **********');
+                        console.info(' ------------------------------------------------------------------------------------ ');
+                        break;
+
+                    case API_CODE.SELL:
+                        console.info('ORDER STATUS : ********** SELL START **********');
+                        result = await handleSellOrder({}, accountInfo, currentPrice, marketId);
+                        console.info('ORDER STATUS : ********** SELL END **********');
+                        console.info(' ------------------------------------------------------------------------------------ ');
+                        break;
+
+                    default:
+                        console.info('ORDER STATUS : ********** ORDER WAIT **********');
+                        console.info(' ------------------------------------------------------------------------------------ ');
                         continue;
                     }
+                } catch (e) {
+                    console.error('ERROR : ', e);
+                    // 해당 항목에서 오류 발생 시 해당 거래만 건너뛰고 계속 진행
+                    continue;
                 }
+            }
+            console.info(' ==================================================================================== ');
         }
     } catch (e) {
         console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
@@ -116,6 +119,8 @@ const executeTrade = async (req, res) => {
  * 전체 종목 크로스 체크
  */
 const preOrderCrossCheck = async () => {
+    console.info(' ==================================================================================== ');
+
     // 주문 요청 정보 조회
     let tradeInfos = await supabase.selectTradeInfo({});
 
@@ -150,6 +155,7 @@ const preOrderCrossCheck = async () => {
         console.info(' ------------------------------------------------------------------------------------ ');
         }
     }
+    console.info(' ==================================================================================== ');
 }
 
 /**
@@ -258,7 +264,6 @@ const getTargetReached = async (marketId, side, currentPrice, avgBuyPrice) => {
 const handleCutLoss = async (currentPrice, avgBuyPrice, accountInfo, marketId) => {
     const threshold = await supabase.selectCommonConfig(API_CODE.CUT_LOSS_THRESHOLD);
     const priceDifference = (avgBuyPrice - currentPrice) / avgBuyPrice;
-
     const isCutLoss = priceDifference >= threshold;
 
     if (isCutLoss) {
