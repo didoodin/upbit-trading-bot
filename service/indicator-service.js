@@ -127,7 +127,7 @@ const checkMA = async (candleList, marketId) => {
   // 이평선 비교 후 주문 정보에 대한 사용여부 갱신
   let disableTarget = '';
 
-  if (ma15 < ma200 * 0.99) { // 1% 이상 작을 때 (데드크로스)
+  if (ma15 < ma200 * 0.985) { // 1.5% 이상 작을 때 (데드크로스)
     console.info('CROSS CHECK : << DEAD CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'Y' });
   
@@ -135,22 +135,8 @@ const checkMA = async (candleList, marketId) => {
       console.info('TRADE INFO : DISABLE');
       disableTarget = marketId;
 
-      // 주문 정보의 손절 종목과 예비 주문 정보의 랜덤 종목과 교체
-      let tradeInfo = isExist[0];
-      let waitInfos = await supabase.selectWaitTradeInfo();
-      let waitInfo = waitInfos[Math.floor(Math.random() * waitInfos.length)];
-      console.info('TRACE INFO [',tradeInfo.market,'] <-> WAIT TRACE INFO [',waitInfo.market,']');
-
-      const waitInfoSeq = waitInfo.info_seq;
-      const tradeInfoSeq = tradeInfo.info_seq;
-
-      // 시퀀스 서로 바꿔주기
-      tradeInfo.info_seq = waitInfoSeq;
-      waitInfo.info_seq = tradeInfoSeq;
-
-      await supabase.updateWaitTradeInfo(tradeInfo);
-      await supabase.updateTradeInfo(waitInfo);
-      console.info('UPDATE SUCCESS : [',tradeInfo.market,'] <-> [',waitInfo.market,']');
+      // 기존 종목 대치
+      await replaceTradeInfo(isExist[0]);
     }
   } else if (ma15 > ma200 * 1.002) { // 0.2% 이상 클 때 (골든크로스)
     console.info('CROSS CHECK : << GOLDEN CROSS >>');
@@ -165,6 +151,28 @@ const checkMA = async (candleList, marketId) => {
   }
 
   return disableTarget;
+}
+
+/**
+ * 기존 주문 정보 <-> 대기 주문 정보 
+ * @param {*} tradeInfo 
+ */
+async function replaceTradeInfo(tradeInfo) {
+     // 주문 정보의 손절 종목과 예비 주문 정보의 랜덤 종목과 교체
+     let waitInfos = await supabase.selectWaitTradeInfo();
+     let waitInfo = waitInfos[Math.floor(Math.random() * waitInfos.length)];
+     console.info('TRACE INFO [',tradeInfo.market,'] <-> WAIT TRACE INFO [',waitInfo.market,']');
+
+     const waitInfoSeq = waitInfo.info_seq;
+     const tradeInfoSeq = tradeInfo.info_seq;
+
+     // 시퀀스 서로 바꿔주기
+     tradeInfo.info_seq = waitInfoSeq;
+     waitInfo.info_seq = tradeInfoSeq;
+
+     await supabase.updateWaitTradeInfo(tradeInfo);
+     await supabase.updateTradeInfo(waitInfo);
+     console.info('UPDATE SUCCESS : [',tradeInfo.market,'] <-> [',waitInfo.market,']');
 }
 
 /**
