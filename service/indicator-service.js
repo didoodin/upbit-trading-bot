@@ -99,8 +99,7 @@ const makeMA = async (candleList, period) => {
       for (let i = 0; i <= tradePrices.length - period; i++) {
         const slice = tradePrices.slice(i, i + period);
         const average = slice.reduce((sum, value) => sum + value, 0) / period; // 평균 계산
-
-        movingAverages.push(average);
+        movingAverages.push(Number(average.toFixed(5)));
       }
     }
 
@@ -122,13 +121,14 @@ const makeMA = async (candleList, period) => {
 const checkMA = async (candleList, marketId) => {
   const ma15 = await makeMA(candleList.slice(0, 15), 15);
   const ma200 = await makeMA(candleList, 200);
-  console.info('MA(15) ',ma15,' || MA(200) ',ma200);
+  const diffRate = await calcDiffRate(ma15, ma200);
+  console.info('MA(15)',ma15,' || MA(200)',ma200, ' -> DIFF RATE : ', diffRate);
 
   // 이평선 비교 후 주문 정보에 대한 사용여부 갱신
   let disableTarget = '';
 
   if (ma15 < ma200 * 1.008) {
-    console.info('CROSS CHECK << DEAD CROSS >>');
+    console.info('CROSS CHECK : << DEAD CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'Y' });
 
     if (isExist.length !== 0) {
@@ -138,7 +138,7 @@ const checkMA = async (candleList, marketId) => {
       disableTarget = marketId;
     }
   } else if (ma15 > ma200 * 0.992) {
-    console.info('CROSS CHECK << GODEN CROSS >>');
+    console.info('CROSS CHECK : << GODEN CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'N' });
 
     if (isExist.length !== 0) {
@@ -146,7 +146,21 @@ const checkMA = async (candleList, marketId) => {
       await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'Y' });
     }
   } 
+
   return disableTarget;
+}
+
+/**
+ * 증감률 체크
+ * @param {*} value1 
+ * @param {*} value2 
+ * @returns 
+ */
+async function calcDiffRate(value1, value2) {
+  const difference = Math.abs(value1 - value2); // 두 값의 절대 차이
+  const smallerValue = Math.min(value1, value2); // 작은 값
+  const percentDiff = (difference / smallerValue) * 100; // 비율 계산
+  return percentDiff.toFixed(2); // 소수점 2자리까지 반환
 }
 
 /**
