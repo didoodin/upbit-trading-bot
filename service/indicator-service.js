@@ -2,7 +2,7 @@ const _ = require('lodash');
 const math = require('mathjs');
 const supabase = require('../utils/supabase');
 const { getCandle } = require('./market-service');
-const { ROUTE } = require('../common/constants');
+const { ROUTE, API_CODE } = require('../common/constants');
 const api = ROUTE.indicators;
 
 /**
@@ -112,37 +112,58 @@ const makeMA = async (candleList, period) => {
 /**
  * 이동평균선 크로스 체크
  * 단기 이평선(15) / 장기 이평선(200) 기준으로 차이 비교
- * 교차 지점이 아닌 안정권 체크를 위해 0.7 비율 체크
+ * 
  * 단기 이평선 > 장기 이평선 (골든 크로스) : 주문 진행
- * 단기 이평선 < 장기 이평선 (데드 크로스) : 주문 미진행 / 전량 매도
+ * 단기 이평선 < 장기 이평선 (데드 크로스) : 주문 미진행 / 전량 매도 / 기존 종목 교체
+ * 
+ * 비트코인 데드크로스의 경우, 진행 정지 및 전체 종목 전량 매도
  * @param {*} req 
  * @param {*} res 
  */
-const checkMA = async (candleList, marketId) => {
+const checkCross = async (candleList, marketId) => {
   const ma15 = await makeMA(candleList.slice(0, 15), 15);
   const ma200 = await makeMA(candleList, 200);
   const diffRate = await calcDiffRate(ma15, ma200);
-  console.info('MA(15)',ma15,' || MA(200)',ma200,' -> DIFF RATE : ',diffRate);
+  console.info('MA(15)', ma15, '|| MA(200)', ma200, ' -> DIFF RATE : ', diffRate, '%');
 
-  // 이평선 비교 후 주문 정보에 대한 사용여부 갱신
+  const isBTC = marketId === 'BTC';
+  return getCross(ma15, ma200, isBTC);
+};
+
+const getCross = (ma15, ma200, isBTC) => {
+  const CROSS = API_CODE.CROSS;
+  
+  const deadCrossThreshold = isBTC ? 0.998 : 0.987; // 비트코인 : 0.2% : 나머지 : 1.3%
+  const goldenCrossThreshold = isBTC ? 1.002 : 1.002;
+
+  if (ma15 < ma200 * deadCrossThreshold) {
+    return CROSS.DEAD;
+  } else if (ma15 > ma200 * goldenCrossThreshold) {
+    return CROSS.GOLDEN;
+  } else {
+    return CROSS.STABLE;
+  }
+};
+
+const handleCrossEvent = async (cross, marketId) => {
   let disableTarget = '';
 
-  if (ma15 < ma200 * 0.99) { // 1% 이상 작을 때 (데드크로스)
+  if (cross === API_CODE.CROSS.DEAD) {
     console.info('CROSS CHECK : << DEAD CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'Y' });
   
-    if (isExist.length !== 0) {
+    if (isExist) {
       console.info('TRADE INFO : DISABLE');
-      disableTarget = marketId;
-
       // 기존 종목 대치
       await replaceTradeInfo(isExist[0]);
+      disableTarget = marketId;
+      return disableTarget;
     }
-  } else if (ma15 > ma200 * 1.002) { // 0.2% 이상 클 때 (골든크로스)
+  } else if (cross === API_CODE.CROSS.GOLDEN) { 
     console.info('CROSS CHECK : << GOLDEN CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'N' });
   
-    if (isExist.length !== 0) {
+    if (isExist) {
       console.info('TRADE INFO : ENABLE');
       await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'Y' });
     }
@@ -183,10 +204,10 @@ async function replaceTradeInfo(tradeInfo) {
  */
 async function calcDiffRate(value1, value2) {
   const difference = Math.abs(value1 - value2); // 두 값의 절대 차이
-  const smallerValue = Math.min(value1, value2); // 작은 값
+  const smallerValue = Math.min(value1, value2);
   const percentDiff = (difference / smallerValue) * 100; // 비율 계산
-  let sign = value1 > value2 ? '+' : '-'; // ma15가 더 크면 '+' , ma200이 더 크면 '-'
-  return `${sign}${percentDiff.toFixed(2)}`; // 부호를 붙여서 반환
+  let sign = value1 > value2 ? '+' : '-'; 
+  return `${sign}${percentDiff.toFixed(2)}`; 
 }
 
 /**
@@ -314,4 +335,4 @@ async function makeBB(candleList) {
     }
   }
 
-module.exports = { getIndicator, makeMA, checkMA, makeRSI, makeBB };
+module.exports = { getIndicator, makeMA, checkCross, handleCrossEvent, makeRSI, makeBB };

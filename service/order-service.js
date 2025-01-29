@@ -1,4 +1,5 @@
 const { ROUTE, API_CODE } = require('../common/constants');
+const { getTicker } = require('../service/ticker-service');
 const api = ROUTE.orders;
 const supabase = require('../utils/supabase');
 let reqInfo = {};
@@ -204,6 +205,40 @@ const calculateAmount = async (req, res) => {
     }
 }
 
+const handleCutLoss = async (req, res) => {
+    const marketId = req.marketId;
+    const accountInfo = req.accountInfo;
+
+    // 현재가 정보
+    const ticker = await getTicker({ markets: ('KRW-' + marketId) });
+    const currentPrice = ticker[0].trade_price;
+    console.info('CURRENT PRICE : ', currentPrice);
+
+    // 코인 존재 여부 및 목표 가격
+    const { target } = await getTargetCoinInfo(accountInfo, marketId);
+
+    if (target) {
+        await executeCutLoss(currentPrice, accountInfo, marketId);
+    }
+        
+}
+
+/**
+ * 손절 매도 여부 판단
+ * @param {*} currentPrice 
+ * @param {*} avgBuyPrice 
+ * @returns 
+ */
+const handleCutLossByThreshold = async (currentPrice, avgBuyPrice, accountInfo, marketId) => {
+    const threshold = await supabase.selectCommonConfig(API_CODE.CUT_LOSS_THRESHOLD);
+    const priceDifference = (avgBuyPrice - currentPrice) / avgBuyPrice;
+    const isCutLoss = priceDifference >= threshold;
+
+    if (isCutLoss) {
+        await executeCutLoss({ currentPrice, accountInfo, marketId });
+    }
+};
+
 /**
  * 손절 매도 진행
  * @param {*} req 
@@ -222,4 +257,4 @@ const executeCutLoss = async (req, res) => {
     return await executeOrder(reqParam); // 손절 매도
 };
 
-module.exports = { setOrderReqInfo, checkOrderAmount, executeOrder, executeCutLoss };
+module.exports = { setOrderReqInfo, checkOrderAmount, executeOrder, handleCutLossByThreshold, handleCutLoss, executeCutLoss };
