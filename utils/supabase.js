@@ -64,8 +64,7 @@ const selectTradeInfo = async (req, res) => {
       .eq('user_id', userId)
       .eq('market', req.market)
       .eq('use_yn', req.useYn)
-      .eq('fix_yn', 'N')
-      .single());
+      .eq('fix_yn', 'N'));
   } else if (req.useYn) {
     ({ data, error } = await supabase
       .from('tb_trade_info')

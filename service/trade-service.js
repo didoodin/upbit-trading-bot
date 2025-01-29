@@ -27,7 +27,7 @@ const executeTrade = async (req, res) => {
         // 계좌 조회
         accountInfo = await getAccounts({});
 
-        // 진행 전 비트코인 하락 여부 및 전체 종목 체크
+        // 주문 전 사전 체크
         let isBtcDown = false;
         isBtcDown = await preOrderCheck({ accountInfo });
 
@@ -133,7 +133,7 @@ const executeTrade = async (req, res) => {
 }
 
 /**
- * 전체 종목 크로스 체크
+ * 주문 전 사전 체크 (비트코인 하락 여부, 크로스 체크)
  */
 const preOrderCheck = async (req, res) => {
     console.info(' ==================================================================================== ');
