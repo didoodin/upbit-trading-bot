@@ -57,12 +57,12 @@ const updateLoginDtById = async (req, res) => {
 const selectTradeInfo = async (req, res) => {
   let data, error;
 
-  if (req.useYn && req.market) {
+  if (req.useYn && req.marketId) {
     ({ data, error } = await supabase
       .from('tb_trade_info')
       .select('*')
       .eq('user_id', userId)
-      .eq('market', req.market)
+      .eq('market', req.marketId)
       .eq('use_yn', req.useYn)
       .eq('fix_yn', 'N')
       .single());
