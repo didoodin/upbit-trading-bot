@@ -127,7 +127,7 @@ const checkMA = async (candleList, marketId) => {
   // 이평선 비교 후 주문 정보에 대한 사용여부 갱신
   let disableTarget = '';
 
-  if (ma15 < ma200 * 0.985) { // 1.5% 이상 작을 때 (데드크로스)
+  if (ma15 < ma200 * 0.99) { // 1% 이상 작을 때 (데드크로스)
     console.info('CROSS CHECK : << DEAD CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'Y' });
   

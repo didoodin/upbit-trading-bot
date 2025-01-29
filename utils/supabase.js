@@ -1,4 +1,3 @@
-const { koreaDate } = require('../utils/date-utils');
 const { supabase } = require('../common/env-config');
 let userId = '';
 
@@ -102,7 +101,7 @@ const updateTradeInfo = async (req, res) => {
     market: market,
     period: period,
     use_yn: 'N',
-    upd_dt: koreaDate
+    upd_dt: new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString()
   })
   .eq('info_seq', info_seq)
   .eq('user_id', userId);
@@ -126,7 +125,7 @@ const updateTradeInfoUseYn = async (req, res) => {
   .from('tb_trade_info')  // 'orders' 테이블을 업데이트
   .update({
     use_yn: req.useYn,
-    upd_dt: koreaDate, 
+    upd_dt: new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString(), 
   })
   .eq('market', req.market)
   .eq('user_id', userId);
@@ -167,7 +166,7 @@ const updateWaitTradeInfo = async (req, res) => {
   .update({
     market: market,
     period: period,
-    upd_dt: koreaDate
+    upd_dt: new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString()
   })
   .eq('info_seq', info_seq)
   .eq('user_id', userId);
@@ -186,6 +185,7 @@ const updateWaitTradeInfo = async (req, res) => {
  * @param {*} res 
  */
 const insertTradeHist = async (req, res) => {
+  const now = new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString();
   const { data, error } = await supabase
     .from('tb_trade_hist')
     .insert([
@@ -197,8 +197,8 @@ const insertTradeHist = async (req, res) => {
         fee: req.fee, // 수수료
         amount: req.amount, // 거래 총액,
         desc: req.desc,
-        trade_dt : koreaDate,
-        reg_dt : koreaDate,
+        trade_dt : now,
+        reg_dt : now,
         upd_dt : null
       },
     ]);
