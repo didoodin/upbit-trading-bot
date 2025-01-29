@@ -133,8 +133,8 @@ const checkCross = async (candleList, marketId) => {
 const getCross = (ma15, ma200, isBTC) => {
   const CROSS = API_CODE.CROSS;
   
-  const deadCrossThreshold = isBTC ? 0.998 : 0.987; // 비트코인 : 0.2% : 나머지 : 1.3%
-  const goldenCrossThreshold = isBTC ? 1.002 : 1.002;
+  const deadCrossThreshold = isBTC ? 0.998 : 0.98; // 비트코인 : 0.2% : 나머지 : 2%
+  const goldenCrossThreshold = 1.002;
 
   if (ma15 < ma200 * deadCrossThreshold) {
     return CROSS.DEAD;
@@ -152,7 +152,7 @@ const handleCrossEvent = async (cross, marketId) => {
     console.info('CROSS CHECK : << DEAD CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'Y' });
   
-    if (isExist) {
+    if (isExist && isExist.length > 0) {
       console.info('TRADE INFO : DISABLE');
       // 기존 종목 대치
       await replaceTradeInfo(isExist[0]);
@@ -163,7 +163,7 @@ const handleCrossEvent = async (cross, marketId) => {
     console.info('CROSS CHECK : << GOLDEN CROSS >>');
     const isExist = await supabase.selectTradeInfo({ market : marketId, useYn : 'N' });
   
-    if (isExist) {
+    if (isExist && isExist.length > 0) {
       console.info('TRADE INFO : ENABLE');
       await supabase.updateTradeInfoUseYn({ market : marketId, useYn : 'Y' });
     }
