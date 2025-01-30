@@ -242,7 +242,7 @@ const updateCloseYnFromTradeHist = async (req, res) => {
     upd_dt: new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString()
   })
   .eq('market', market)
-  .eq('type', API_CODE.BUY)
+  .eq('type', 'BUY')
   .eq('close_yn', null);
 
   if (error) {
