@@ -133,7 +133,7 @@ const checkCross = async (candleList, marketId) => {
 const getCross = (ma15, ma200, isBTC) => {
   const CROSS = API_CODE.CROSS;
   
-  const deadCrossThreshold = isBTC ? 0.998 : 0.98; // 비트코인 : 0.2% : 나머지 : 2%
+  const deadCrossThreshold = isBTC ? 0.996 : 0.98; // 비트코인 : 0.4% : 나머지 : 2%
   const goldenCrossThreshold = 1.002;
 
   if (ma15 < ma200 * deadCrossThreshold) {

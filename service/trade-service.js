@@ -37,9 +37,10 @@ const executeTrade = async (req, res) => {
             console.info(' ********** BTC DOWN ********** ');
 
             // 보유 종목 전체 손절
-            for (const { market } of accountInfo) {
-                console.info('PROCESSING CUT LOSS FOR MARKET : [',market,']');
-                handleCutLoss({'marketId' : market, accountInfo});
+            for (const { currency } of accountInfo) {
+                if (currency === KRW) continue; // KRW는 제외
+                console.info('PROCESSING CUT LOSS FOR MARKET : [', currency, ']');
+                await handleCutLoss({ 'marketId': currency, accountInfo });
             }
 
             console.info(' ------------------------------------------------------------------------------------ ');
@@ -136,8 +137,6 @@ const executeTrade = async (req, res) => {
  * 주문 전 사전 체크 (비트코인 하락 여부, 크로스 체크)
  */
 const preOrderCheck = async (req, res) => {
-    console.info(' ==================================================================================== ');
-
     // 주문 요청 정보 조회
     let tradeInfos = await supabase.selectTradeInfo({});
 
@@ -164,8 +163,8 @@ const preOrderCheck = async (req, res) => {
             }
         console.info(' ------------------------------------------------------------------------------------ ');
         }
+        console.info(' ==================================================================================== ');
     }
-    console.info(' ==================================================================================== ');
 }
 
 /**

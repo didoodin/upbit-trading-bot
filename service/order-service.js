@@ -110,7 +110,7 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
         switch (side) {
             case API_CODE.BUY:
                 if (accountBalance >= 5000 && accountBalance <= 10000) { // 계좌 잔액 5,000 ~ 10,000원 시 전량 매수
-                    console.info('[BUY] INSUFFICIENT FUNDS, FULL PURCHASE. : ', accountBalance);
+                    console.info('[BUY] INSUFFICIENT FUNDS, FULL PURCHASE. : ', parseInt(accountBalance));
                     return accountBalance;
                 } else if (accountBalance > 10000 && accountBalance <= 20000) { // 계좌 잔액 10,000 ~ 20,000원 시 계좌 잔액의 0.6%
                     console.info('[BUY] TARGET ORDER AMOUNT : ', (accountBalance * 0.6));
