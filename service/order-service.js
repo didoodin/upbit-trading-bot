@@ -85,6 +85,14 @@ const executeOrder = async (req, res) => {
             if (req.isCutLoss) {
                 tradeInfo.desc = 'CUT LOSS';
             }
+
+            // 주문 완료 여부
+            if (type === API_CODE.BUY) {
+                tradeInfo.closeYn = 'N';
+            } else if (type === API_CODE.SELL) {
+                tradeInfo.closeYn = 'Y';
+                await supabase.updateCloseYnFromTradeHist({ 'market' : data.market });
+            }
     
             await supabase.insertTradeHist(tradeInfo);
         }
