@@ -1,3 +1,4 @@
+const { API_CODE } = require('../common/constants');
 const { supabase } = require('../common/env-config');
 let userId = '';
 
@@ -103,7 +104,7 @@ const updateTradeInfo = async (req, res) => {
   const { info_seq, market, period } = req;
 
   const { data, error } = await supabase
-  .from('tb_trade_info')  // 'orders' 테이블을 업데이트
+  .from('tb_trade_info')
   .update({
     market: market,
     period: period,
@@ -129,7 +130,7 @@ const updateTradeInfo = async (req, res) => {
  */
 const updateTradeInfoUseYn = async (req, res) => {
   const { data, error } = await supabase
-  .from('tb_trade_info')  // 'orders' 테이블을 업데이트
+  .from('tb_trade_info')
   .update({
     use_yn: req.useYn,
     upd_dt: new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString(), 
@@ -165,11 +166,17 @@ const selectWaitTradeInfo = async (req, res) => {
     return data;
 };
 
+/**
+ * 주문 정보 갱신
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
 const updateWaitTradeInfo = async (req, res) => {
   const { info_seq, market, period } = req;
 
   const { data, error } = await supabase
-  .from('tb_wait_trade_info')  // 'orders' 테이블을 업데이트
+  .from('tb_wait_trade_info')
   .update({
     market: market,
     period: period,
@@ -204,6 +211,7 @@ const insertTradeHist = async (req, res) => {
         fee: req.fee, // 수수료
         amount: req.amount, // 거래 총액,
         desc: req.desc,
+        close_yn: req.closeYn,
         trade_dt : now,
         reg_dt : now,
         upd_dt : null
@@ -216,6 +224,33 @@ const insertTradeHist = async (req, res) => {
     }
 
     return data;
+};
+
+/**
+ * 체결 이력 완료 상태 갱신
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+const updateCloseYnFromTradeHist = async (req, res) => {
+  const { market } = req;
+
+  const { data, error } = await supabase
+  .from('tb_trade_hist')
+  .update({
+    close_yn: 'Y',
+    upd_dt: new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString()
+  })
+  .eq('market', market)
+  .eq('type', 'BUY')
+  .eq('close_yn', null);
+
+  if (error) {
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      return null;
+  }
+  
+  return data;
 };
 
 /**
@@ -311,5 +346,6 @@ module.exports = {
   updateLoginDtById,
   updateTradeInfo,
   updateTradeInfoUseYn,
-  updateWaitTradeInfo
+  updateWaitTradeInfo,
+  updateCloseYnFromTradeHist
 };

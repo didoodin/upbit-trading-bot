@@ -66,11 +66,13 @@ const executeOrder = async (req, res) => {
                 price = data.price;
                 amount = data.locked;
                 fee = data.remaining_fee;
+                closeYn = 'N';
             } else if (data.side === API_CODE.SELL) {
                 type = 'SELL';
                 price = req.currentPrice * data.volume;
                 fee = price * 0.0005;
                 amount = price + fee;
+                closeYn = 'Y';
             }
     
             const tradeInfo = {
@@ -87,6 +89,11 @@ const executeOrder = async (req, res) => {
             }
     
             await supabase.insertTradeHist(tradeInfo);
+
+            // 매도일 경우, 기존 매수 주문 완료 여부 갱신
+            if (type === API_CODE.SELL) {
+                await supabase.updateCloseYnFromTradeHist({ 'market' : data.market });
+            }
         }
 
         return data;
