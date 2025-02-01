@@ -3,7 +3,7 @@ const { getTicker } = require('../service/ticker-service');
 const { getAllMarket, getCandle } = require('./market-service');
 const { checkCross, handleCrossEvent, makeRSI, makeBB } = require('../service/indicator-service');
 const { checkSignal } = require('../service/signal-service');
-const { checkOrderAmount, executeOrder, handleCutLoss, handleCutLossByThreshold } = require('../service/order-service');
+const { checkOrderAmount, executeOrder, handleCutLossByThreshold } = require('../service/order-service');
 const supabase = require('../utils/supabase');
 const _ = require('lodash');
 
@@ -36,10 +36,10 @@ const executeTrade = async (req, res) => {
             console.info(' ------------------------------------------------------------------------------------ ');
             console.info(' ********** BTC DOWN ********** ');
 
-            // 보유 종목 전체 손절
+            // 비트코인 0.4% 이상 하락 시 보유 종목 전체 손절
             for (const { currency } of accountInfo) {
-                if (currency === KRW) continue; // KRW는 제외
-                console.info('PROCESSING CUT LOSS FOR MARKET : [', currency, ']');
+                if (currency === KRW) continue;
+                console.info('PROCESSING CUT LOSS FOR MARKET : [',currency,']');
                 await handleCutLoss({ 'marketId': currency, accountInfo });
             }
 
@@ -84,7 +84,7 @@ const executeTrade = async (req, res) => {
                     const side = await checkSignal({ currentPrice, rsi, bb });
                     console.info('SIGNAL : [', side, ']');
 
-                    // // 손절 여부 체크 및 진행
+                    // 손절 여부 체크 및 진행
                     if (targetCoin) await handleCutLossByThreshold(currentPrice, avgBuyPrice, accountInfo, marketId);
 
                     switch (side) {
@@ -137,6 +137,29 @@ const executeTrade = async (req, res) => {
  * 주문 전 사전 체크 (비트코인 하락 여부, 크로스 체크)
  */
 const preOrderCheck = async (req, res) => {
+    let accountInfo = req.accountInfo;
+
+    // // 현재 주문 정보 및 대기 주문 정보 조회
+    // const tradeInfo = await supabase.selectTradeInfo({ fixYn : 'N' });
+    // const waitTradeInfo = await supabase.selectWaitTradeInfo();
+
+    // const markets = [...tradeInfo, ...waitTradeInfo].filter(item => item.market !== 'BTC').map(item => 'KRW-' + item.market).join(',');
+    // const tickers = await getTicker({ markets: markets });
+
+    // // 거래대금 & 거래량 순위
+    // const tradePriceTop4 = tickers
+    // .map(item => ({
+    //     market: item.market.replace('KRW-', ''),
+    //     acc_trade_price: item.acc_trade_price,
+    //     acc_trade_volume: item.acc_trade_volume
+    //     }))
+    //     .sort((a, b) => {
+    //     if (b.acc_trade_price !== a.acc_trade_price) { return b.acc_trade_price - a.acc_trade_price; }
+    //     return b.acc_trade_volume - a.acc_trade_volume;
+    //     }).slice(0, 4);
+
+    // console.info('[** TRADE PRICE & VOLUME TOP4 **]', tradePriceTop4);
+
     // 주문 요청 정보 조회
     let tradeInfos = await supabase.selectTradeInfo({});
 
@@ -187,7 +210,30 @@ const handleBuyOrder = async (reqParam, currentPrice, targetCoin, avgBuyPrice) =
             console.info(`[BUY] MY AVG PRICE > CURRENT MARKET`);
             return '';
         } else {
-            return await executeOrder(reqParam); // 시장가 매수
+            // 추가 매수 횟수 체크
+            const market = reqParam.market.replace('KRW-', '');
+            const tradeInfo = await supabase.selectTradeInfo({ market, useYn : 'Y' });
+            
+            // 0 ~ 3회: 횟수 1 증가 및 추가 매수 시간 업데이트, 15분 후에 다시 매수 가능
+            // 3회 초과 : 손절
+            let rebuyCnt = tradeInfo.rebuy_cnt;
+
+            if (rebuyCnt < 3) {
+                const { parseISO, addMinutes, isAfter } = require('date-fns');
+                let rebuyDt = parseISO(tradeInfo.rebuy_dt);
+                const rebuyDtPlus15Min = addMinutes(rebuyDt, 15);
+
+                if (isAfter(new Date(), rebuyDtPlus15Min)) {
+                    console.info('[BUY] EXECUTE ADDITIONAL PURCHASE');
+                    await supabase.updateTradeInfoRebuyInfo({ market, rebuyCnt : rebuyCnt + 1, rebuyDt : new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString() });
+                    return await executeOrder(reqParam); // 시장가 매수
+                } else {
+                    console.info('[BUY] ADDITIONAL PURCHASE TIME NOT REACHED YET');
+                    return '';
+                }
+            } else if (rebuyCnt >= 3) {
+                return '';
+            }
         }   
     }
 };
@@ -218,9 +264,35 @@ const handleSellOrder = async (reqParam, accountInfo, currentPrice, marketId) =>
     } else {
         const volume = targetCoin.balance; // 보유 수량
         reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice };
+
+        // 추가 매수 횟수 초기화
+        await supabase.updateTradeInfoRebuyInfo({ market : marketId, rebuyCnt : 0, rebuyDt : null });
         return await executeOrder(reqParam);
     }
 };
+
+/**
+ * 손절 매도 여부 판단
+ * @param {*} currentPrice 
+ * @param {*} avgBuyPrice 
+ * @returns 
+ */
+const handleCutLoss = async (req, res) => {
+    const marketId = req.marketId;
+    const accountInfo = req.accountInfo;
+
+    // 현재가 정보
+    const ticker = await getTicker({ markets: ('KRW-' + marketId) });
+    const currentPrice = ticker[0].trade_price;
+    console.info('CURRENT PRICE : ', currentPrice);
+
+    // 코인 존재 여부 및 목표 가격
+    const { target } = await getTargetCoinInfo(accountInfo, marketId);
+
+    if (target) {
+        await executeCutLoss(currentPrice, accountInfo, marketId);
+    }
+}
 
 /**
  * 계좌 조회 및 목표 코인 정보 반환

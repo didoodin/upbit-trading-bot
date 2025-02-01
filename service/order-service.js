@@ -1,5 +1,4 @@
 const { ROUTE, API_CODE } = require('../common/constants');
-const { getTicker } = require('../service/ticker-service');
 const api = ROUTE.orders;
 const supabase = require('../utils/supabase');
 let reqInfo = {};
@@ -55,11 +54,14 @@ const executeOrder = async (req, res) => {
         data = await call(api.order.method, (api.route + api.order.path), req);
 
         // 주문 체결 이력 추가
-        if (data) {
+        if (data.uuid) {
+            console.info('[-ORDER-] ORDER SUCCESS');
+
             let type;
             let price;
             let amount;
             let fee;
+            let closeYn;
     
             if (data.side === API_CODE.BUY) {
                 type = 'BUY';
@@ -75,12 +77,13 @@ const executeOrder = async (req, res) => {
                 closeYn = 'Y';
             }
     
-            const tradeInfo = {
+            let tradeInfo = {
                 'market' : data.market,
                 'type' : type,
                 'price': price, // 주문 당시 화폐 가격
                 'fee': fee, // 사용된 수수료
                 'amount': amount, // 거래 총액
+                'closeYn' : closeYn
             };
 
             // 손절 시 체결 이력에 추가
@@ -93,7 +96,10 @@ const executeOrder = async (req, res) => {
             // 매도일 경우, 기존 매수 주문 완료 여부 갱신
             if (type === API_CODE.SELL) {
                 await supabase.updateCloseYnFromTradeHist({ 'market' : data.market });
+                console.info('[-ORDER-] TRADE HIST STATUS -> CLOSED');
             }
+        } else {
+            console.info('[-ORDER-] ORDER FAIL : ', data);
         }
 
         return data;
@@ -116,12 +122,12 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
     try {
         switch (side) {
             case API_CODE.BUY:
-                if (accountBalance >= 5000 && accountBalance <= 10000) { // 계좌 잔액 5,000 ~ 10,000원 시 전량 매수
-                    console.info('[BUY] INSUFFICIENT FUNDS, FULL PURCHASE. : ', parseInt(accountBalance));
-                    return accountBalance;
+                if (accountBalance > 5000 && accountBalance <= 10000) {
+                    console.info('[BUY] TARGET ORDER AMOUNT : ', Math.round(accountBalance));
+                    return Math.round(accountBalance);
                 } else if (accountBalance > 10000 && accountBalance <= 20000) { // 계좌 잔액 10,000 ~ 20,000원 시 계좌 잔액의 0.6%
-                    console.info('[BUY] TARGET ORDER AMOUNT : ', (accountBalance * 0.6));
-                    return accountBalance * 0.6;
+                    console.info('[BUY] TARGET ORDER AMOUNT : ', Math.round(accountBalance * 0.6));
+                    return Math.round(accountBalance * 0.6);
                 } else {
                     console.info('[BUY] CALCULATE AMOUNT START : ', accountBalance);
                     return await calculateAmount({ side, accountBalance, entryPrice });
@@ -153,7 +159,7 @@ const calculateAmount = async (req, res) => {
         let maxAllocation = await supabase.selectCommonConfig(API_CODE.MAX_ALLOCATION);
     
         const riskPercentage = 0.03;
-        const stopLossPercentage = 0.03;  // 손절가 계산 비율 (3%)
+        const stopLossPercentage = 0.015;  // 손절가 계산 비율 (1.5%)
         const minOrderPrice = 5000;      // 최소 주문 금액
         const minOrderSize = 0.0001;      // 최소 주문 단위
         const feeRate = 0.05;            // 거래소 수수료 비율 (0.05%)
@@ -193,7 +199,6 @@ const calculateAmount = async (req, res) => {
     
         // 9. 최소 주문 금액 검증
         const orderPrice = Math.round(orderQuantity * entryPrice); // 주문 금액
-        // console.debug(orderPrice);
         
         if (orderPrice < minOrderPrice) {
             console.error('[BUY] INSUFFICIENT BALANCE');
@@ -212,29 +217,12 @@ const calculateAmount = async (req, res) => {
     }
 }
 
-const handleCutLoss = async (req, res) => {
-    const marketId = req.marketId;
-    const accountInfo = req.accountInfo;
-
-    // 현재가 정보
-    const ticker = await getTicker({ markets: ('KRW-' + marketId) });
-    const currentPrice = ticker[0].trade_price;
-    console.info('CURRENT PRICE : ', currentPrice);
-
-    // 코인 존재 여부 및 목표 가격
-    const { target } = await getTargetCoinInfo(accountInfo, marketId);
-
-    if (target) {
-        await executeCutLoss(currentPrice, accountInfo, marketId);
-    }
-        
-}
-
 /**
- * 손절 매도 여부 판단
+ * 손절 비율 계산
  * @param {*} currentPrice 
  * @param {*} avgBuyPrice 
- * @returns 
+ * @param {*} accountInfo 
+ * @param {*} marketId 
  */
 const handleCutLossByThreshold = async (currentPrice, avgBuyPrice, accountInfo, marketId) => {
     const threshold = await supabase.selectCommonConfig(API_CODE.CUT_LOSS_THRESHOLD);
@@ -255,7 +243,7 @@ const handleCutLossByThreshold = async (currentPrice, avgBuyPrice, accountInfo, 
 const executeCutLoss = async (req, res) => {
     const { currentPrice, accountInfo, marketId } = req;
     const targetCoin = accountInfo.find(item => item.currency === marketId);
-    const volume = targetCoin.balance; // 보유 수량
+    const volume = targetCoin.balance * 0.5; // 보유 수량의 50%
 
     // 손절 매도에만 isCutLoss를 넘겨줌
     const reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice, isCutLoss : true };
@@ -264,4 +252,4 @@ const executeCutLoss = async (req, res) => {
     return await executeOrder(reqParam); // 손절 매도
 };
 
-module.exports = { setOrderReqInfo, checkOrderAmount, executeOrder, handleCutLossByThreshold, handleCutLoss, executeCutLoss };
+module.exports = { setOrderReqInfo, checkOrderAmount, executeOrder, handleCutLossByThreshold, executeCutLoss };
