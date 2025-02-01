@@ -94,7 +94,7 @@ const executeOrder = async (req, res) => {
             await supabase.insertTradeHist(tradeInfo);
 
             // 매도일 경우, 기존 매수 주문 완료 여부 갱신
-            if (type === API_CODE.SELL) {
+            if (type === 'SELL') {
                 await supabase.updateCloseYnFromTradeHist({ 'market' : tradeInfo.market });
                 console.info('[-ORDER-] TRADE HIST STATUS -> CLOSED');
             }
@@ -129,7 +129,6 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
                     console.info('[BUY] TARGET ORDER AMOUNT :', Math.round(accountBalance * 0.6));
                     return Math.round(accountBalance * 0.6);
                 } else {
-                    console.info('[BUY] CALCULATE AMOUNT START :', Math.round(Number(accountBalance)));
                     return await calculateAmount({ side, accountBalance, entryPrice });
                 }
  
