@@ -146,6 +146,12 @@ const updateTradeInfoUseYn = async (req, res) => {
   return data;
 };
 
+/**
+ * 주문 정보 추가 매수 정보 갱신
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
 const updateTradeInfoRebuyInfo = async (req, res) => {
   const { data, error } = await supabase
   .from('tb_trade_info')
