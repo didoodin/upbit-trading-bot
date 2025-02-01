@@ -207,36 +207,52 @@ const handleBuyOrder = async (reqParam, currentPrice, targetCoin, avgBuyPrice) =
 
         // 목표 가격 도달하지 않으면, 분할 매수 시도
         if (!isTargetReached) {
-            console.info(`[BUY] MY AVG PRICE > CURRENT MARKET`);
             return '';
         } else {
-            // 추가 매수 횟수 체크
-            const market = reqParam.market.replace('KRW-', '');
-            const tradeInfo = await supabase.selectTradeInfo({ market, useYn : 'Y' });
-            
-            // 0 ~ 3회: 횟수 1 증가 및 추가 매수 시간 업데이트, 15분 후에 다시 매수 가능
-            // 3회 초과 : 손절
-            let rebuyCnt = tradeInfo.rebuy_cnt;
-
-            if (rebuyCnt < 3) {
-                const { parseISO, addMinutes, isAfter } = require('date-fns');
-                let rebuyDt = parseISO(tradeInfo.rebuy_dt);
-                const rebuyDtPlus15Min = addMinutes(rebuyDt, 15);
-
-                if (isAfter(new Date(), rebuyDtPlus15Min)) {
-                    console.info('[BUY] EXECUTE ADDITIONAL PURCHASE');
-                    await supabase.updateTradeInfoRebuyInfo({ market, rebuyCnt : rebuyCnt + 1, rebuyDt : new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString() });
-                    return await executeOrder(reqParam); // 시장가 매수
-                } else {
-                    console.info('[BUY] ADDITIONAL PURCHASE TIME NOT REACHED YET');
-                    return '';
-                }
-            } else if (rebuyCnt >= 3) {
-                return '';
-            }
+            // 추가 매수 여부 체크
+            const canRebuy = await handleRebuy(reqParam);
+            if (canRebuy) await executeOrder(reqParam);
         }   
     }
 };
+
+/**
+ * 추가 매수 횟수 체크
+ * 0 ~ 3회: 횟수 1 증가 및 추가 매수 시간 업데이트, 15분 후에 다시 매수 가능
+ * @param {*} reqParam 
+ * @returns 
+ */
+async function handleRebuy(reqParam) {
+    console.info('[BUY] EXECUTE ADDITIONAL PURCHASE CHECK');
+    const market = reqParam.market.replace('KRW-', '');
+    let tradeInfo = await supabase.selectTradeInfo({ market, useYn : 'Y' });
+    tradeInfo = tradeInfo[0];
+    let rebuyCnt = tradeInfo.rebuy_cnt;
+
+    if (rebuyCnt >= 3) return '';
+
+    const canRebuy = await shouldRebuy(tradeInfo);
+    
+    if (!canRebuy) {
+        console.info('[BUY] ADDITIONAL PURCHASE TIME NOT REACHED YET');
+        return '';
+    }
+
+    console.info('[BUY] EXECUTE ADDITIONAL PURCHASE');
+
+    await supabase.updateTradeInfoRebuyInfo({
+        market,
+        rebuyCnt: rebuyCnt + 1,
+        rebuyDt: new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString()
+    });
+}
+
+async function shouldRebuy(tradeInfo) {
+    const { parseISO, addMinutes, isAfter } = require('date-fns');
+    if (!tradeInfo.rebuy_cnt) return true;
+    const rebuyDt = parseISO(tradeInfo.rebuy_dt);
+    return isAfter(new Date(), addMinutes(rebuyDt, 15));
+}
 
 /**
  * 매도 주문 처리
@@ -259,7 +275,6 @@ const handleSellOrder = async (reqParam, accountInfo, currentPrice, marketId) =>
     const isTargetReached = await getTargetReached(API_CODE.SELL, currentPrice, targetCoin.avg_buy_price);
 
     if (!isTargetReached) {
-        console.info('[SELL] TARGET NOT REACHED');
         return ''; // 목표 도달하지 않으면 매도하지 않음
     } else {
         const volume = targetCoin.balance; // 보유 수량
@@ -315,9 +330,10 @@ const getTargetCoinInfo = (accountInfo, marketId) => {
  * @returns {boolean} 목표 도달 여부
  */
 const getTargetReached = async (side, currentPrice, avgBuyPrice) => {
-    let code = '';
+    let code;
     let targetRatio = 0;
     let targetPrice = 0;
+    let targetReached;
 
     if (side === API_CODE.BUY) {
         code = 'BUY';
@@ -332,8 +348,10 @@ const getTargetReached = async (side, currentPrice, avgBuyPrice) => {
     // 현재가에 소수점 존재 시 5자리까지 반올림 처리
     if (targetPrice % 1 !== 0) targetPrice = targetPrice.toFixed(5);
 
-    console.info('TARGET : MARKET PRICE [',currentPrice,'] | TARGET PRICE :[',Number(targetPrice),']');
-    return side === API_CODE.BUY ? currentPrice < targetPrice : currentPrice >= targetPrice;
+    targetReached = side === API_CODE.BUY ? currentPrice < targetPrice : currentPrice >= targetPrice;
+    console.info('TARGET REACHED ? [',targetReached,']');
+
+    return targetReached;
 };
 
 module.exports = { executeTrade }
