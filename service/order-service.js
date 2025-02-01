@@ -123,13 +123,13 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
         switch (side) {
             case API_CODE.BUY:
                 if (accountBalance > 5000 && accountBalance <= 10000) {
-                    console.info('[BUY] TARGET ORDER AMOUNT : ', Math.round(accountBalance));
+                    console.info('[BUY] TARGET ORDER AMOUNT :', Math.round(accountBalance));
                     return Math.round(accountBalance);
                 } else if (accountBalance > 10000 && accountBalance <= 20000) { // 계좌 잔액 10,000 ~ 20,000원 시 계좌 잔액의 0.6%
-                    console.info('[BUY] TARGET ORDER AMOUNT : ', Math.round(accountBalance * 0.6));
+                    console.info('[BUY] TARGET ORDER AMOUNT :', Math.round(accountBalance * 0.6));
                     return Math.round(accountBalance * 0.6);
                 } else {
-                    console.info('[BUY] CALCULATE AMOUNT START : ', accountBalance);
+                    console.info('[BUY] CALCULATE AMOUNT START :', accountBalance);
                     return await calculateAmount({ side, accountBalance, entryPrice });
                 }
  
@@ -201,12 +201,12 @@ const calculateAmount = async (req, res) => {
         const orderPrice = Math.round(orderQuantity * entryPrice); // 주문 금액
         
         if (orderPrice < minOrderPrice) {
-            console.error('[BUY] INSUFFICIENT BALANCE');
+            console.error('[BUY] INSUFFICIENT BALANCE :', orderPrice);
             return 0; // 주문 불가능
         } 
     
         if (side === API_CODE.BUY) {
-            console.info('[BUY] TARGET ORDER AMOUNT : ', orderPrice);
+            console.info('[BUY] TARGET ORDER AMOUNT :', orderPrice);
             return orderPrice;
         } else if (side === API_CODE.SELL) {
             return orderQuantity;
@@ -243,7 +243,7 @@ const handleCutLossByThreshold = async (currentPrice, avgBuyPrice, accountInfo, 
 const executeCutLoss = async (req, res) => {
     const { currentPrice, accountInfo, marketId } = req;
     const targetCoin = accountInfo.find(item => item.currency === marketId);
-    const volume = targetCoin.balance * 0.5; // 보유 수량의 50%
+    const volume = targetCoin.balance;
 
     // 손절 매도에만 isCutLoss를 넘겨줌
     const reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice, isCutLoss : true };
