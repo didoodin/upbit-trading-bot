@@ -58,7 +58,7 @@ const updateLoginDtById = async (req, res) => {
 const selectTradeInfo = async (req, res) => {
   let data, error;
 
-  if (req.useYn && req.market) {
+  if (req.market && req.useYn) {
     ({ data, error } = await supabase
       .from('tb_trade_info')
       .select('*')
@@ -73,12 +73,12 @@ const selectTradeInfo = async (req, res) => {
       .eq('user_id', userId)
       .eq('use_yn', req.useYn)
       .eq('fix_yn', 'N'));
-  } else if (req.useYn) {
+  } else if (req.fixYn) {
     ({ data, error } = await supabase
       .from('tb_trade_info')
       .select('*')
       .eq('user_id', userId)
-      .eq('use_yn', req.useYn));
+      .eq('fix_yn', req.fixYn));
   } else {
     ({ data, error } = await supabase
       .from('tb_trade_info')
@@ -133,6 +133,31 @@ const updateTradeInfoUseYn = async (req, res) => {
   .from('tb_trade_info')
   .update({
     use_yn: req.useYn,
+    upd_dt: new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString(), 
+  })
+  .eq('market', req.market)
+  .eq('user_id', userId);
+
+  if (error) {
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      return null;
+  }
+  
+  return data;
+};
+
+/**
+ * 주문 정보 추가 매수 정보 갱신
+ * @param {*} req 
+ * @param {*} res 
+ * @returns 
+ */
+const updateTradeInfoRebuyInfo = async (req, res) => {
+  const { data, error } = await supabase
+  .from('tb_trade_info')
+  .update({
+    rebuy_cnt: req.rebuyCnt,
+    rebuy_dt : req.rebuyDt, 
     upd_dt: new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString(), 
   })
   .eq('market', req.market)
@@ -233,7 +258,7 @@ const insertTradeHist = async (req, res) => {
  * @returns 
  */
 const updateCloseYnFromTradeHist = async (req, res) => {
-  const { market } = req;
+  const { market } = req.market;
 
   const { data, error } = await supabase
   .from('tb_trade_hist')
@@ -243,7 +268,7 @@ const updateCloseYnFromTradeHist = async (req, res) => {
   })
   .eq('market', market)
   .eq('type', 'BUY')
-  .eq('close_yn', null);
+  .eq('close_yn', 'N');
 
   if (error) {
       console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
@@ -322,7 +347,8 @@ const insertDailyCalcStat = async (req, res) => {
     .insert([
       {
         trade_dt: req.tradeDt,
-        total_price: req.totalPrice
+        total_price: req.totalPrice,
+        total_fee: req.totalFee
       },
     ]);
 
@@ -346,6 +372,7 @@ module.exports = {
   updateLoginDtById,
   updateTradeInfo,
   updateTradeInfoUseYn,
+  updateTradeInfoRebuyInfo,
   updateWaitTradeInfo,
   updateCloseYnFromTradeHist
 };
