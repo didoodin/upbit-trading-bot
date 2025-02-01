@@ -3,7 +3,7 @@ const { getTicker } = require('../service/ticker-service');
 const { getAllMarket, getCandle } = require('./market-service');
 const { checkCross, handleCrossEvent, makeRSI, makeBB } = require('../service/indicator-service');
 const { checkSignal } = require('../service/signal-service');
-const { checkOrderAmount, executeOrder, handleCutLossByThreshold } = require('../service/order-service');
+const { checkOrderAmount, executeOrder, handleCutLossByThreshold, executeCutLoss } = require('../service/order-service');
 const supabase = require('../utils/supabase');
 const _ = require('lodash');
 
@@ -66,23 +66,23 @@ const executeTrade = async (req, res) => {
 
                     // RSI 계산
                     const rsi = await makeRSI(candleList);
-                    console.info('RSI : ', rsi);
+                    console.info('RSI :', rsi);
 
                     // 볼린저 밴드 계산
                     const bb = await makeBB(candleList);
-                    console.info('BB : ', bb);
+                    console.info('BB HIGH :', bb.BBH,'| LOW :', bb.BBL);
 
                     // 현재가 정보
                     const ticker = await getTicker({ markets: ('KRW-' + marketId) });
                     const currentPrice = ticker[0].trade_price;
-                    console.info('CURRENT PRICE : ', currentPrice);
+                    console.info('CURRENT PRICE :', currentPrice);
 
                     // 코인 존재 여부 및 목표 가격
                     const { targetCoin, avgBuyPrice } = await getTargetCoinInfo(accountInfo, marketId);
 
                     // 신호 체크
                     const side = await checkSignal({ currentPrice, rsi, bb });
-                    console.info('SIGNAL : [', side, ']');
+                    console.info('SIGNAL : [',side,']');
 
                     // 손절 여부 체크 및 진행
                     if (targetCoin) await handleCutLossByThreshold(currentPrice, avgBuyPrice, accountInfo, marketId);
@@ -116,7 +116,7 @@ const executeTrade = async (req, res) => {
                             continue;
                         }
                     } catch (e) {
-                        console.error('ERROR : ', e);
+                        console.error('ERROR :', e);
                         // 해당 항목에서 오류 발생 시 해당 거래만 건너뛰고 계속 진행
                         continue;
                     }
@@ -125,7 +125,7 @@ const executeTrade = async (req, res) => {
             }
         }
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR :', e);
         require('../utils/interval-manager').stopInterval();
         return e;
     }
@@ -284,7 +284,7 @@ const handleCutLoss = async (req, res) => {
     // 현재가 정보
     const ticker = await getTicker({ markets: ('KRW-' + marketId) });
     const currentPrice = ticker[0].trade_price;
-    console.info('CURRENT PRICE : ', currentPrice);
+    console.info('CURRENT PRICE :', currentPrice);
 
     // 코인 존재 여부 및 목표 가격
     const { target } = await getTargetCoinInfo(accountInfo, marketId);
@@ -332,7 +332,7 @@ const getTargetReached = async (side, currentPrice, avgBuyPrice) => {
     // 현재가에 소수점 존재 시 5자리까지 반올림 처리
     if (targetPrice % 1 !== 0) targetPrice = targetPrice.toFixed(5);
 
-    console.info('[TARGET REACHED] MARKET PRICE : ', currentPrice, ' | TARGET PRICE : ', Number(targetPrice));
+    console.info('TARGET : MARKET PRICE [',currentPrice,'] | TARGET PRICE :[',Number(targetPrice),']');
     return side === API_CODE.BUY ? currentPrice < targetPrice : currentPrice >= targetPrice;
 };
 

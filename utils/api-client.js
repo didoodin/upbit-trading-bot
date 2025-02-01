@@ -63,7 +63,7 @@ async function call(method, endpoint, body = {}) {
             await getRemainReqCnt(e.response);
             await sleep(sleepTime);
         } else {
-            console.error('[UPBIT-TRADING-BOT] ERROR : ', e);
+            console.error('[UPBIT-TRADING-BOT] ERROR :', e);
             return e;
         }
     }

@@ -95,7 +95,7 @@ const executeOrder = async (req, res) => {
 
             // 매도일 경우, 기존 매수 주문 완료 여부 갱신
             if (type === API_CODE.SELL) {
-                await supabase.updateCloseYnFromTradeHist({ 'market' : data.market });
+                await supabase.updateCloseYnFromTradeHist({ 'market' : tradeInfo.market });
                 console.info('[-ORDER-] TRADE HIST STATUS -> CLOSED');
             }
         } else {
@@ -104,7 +104,7 @@ const executeOrder = async (req, res) => {
 
         return data;
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT] ERROR : ', e.code);
+        console.error('[UPBIT-TRADING-BOT] ERROR :', e.code);
         return e;
     } 
 };
@@ -123,13 +123,13 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
         switch (side) {
             case API_CODE.BUY:
                 if (accountBalance > 5000 && accountBalance <= 10000) {
-                    console.info('[BUY] TARGET ORDER AMOUNT : ', Math.round(accountBalance));
+                    console.info('[BUY] TARGET ORDER AMOUNT :', Math.round(accountBalance));
                     return Math.round(accountBalance);
                 } else if (accountBalance > 10000 && accountBalance <= 20000) { // 계좌 잔액 10,000 ~ 20,000원 시 계좌 잔액의 0.6%
-                    console.info('[BUY] TARGET ORDER AMOUNT : ', Math.round(accountBalance * 0.6));
+                    console.info('[BUY] TARGET ORDER AMOUNT :', Math.round(accountBalance * 0.6));
                     return Math.round(accountBalance * 0.6);
                 } else {
-                    console.info('[BUY] CALCULATE AMOUNT START : ', accountBalance);
+                    console.info('[BUY] CALCULATE AMOUNT START :', Math.round(Number(accountBalance)));
                     return await calculateAmount({ side, accountBalance, entryPrice });
                 }
  
@@ -137,7 +137,7 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
                 return await calculateAmount({ side, accountBalance, entryPrice }); // SELL 조건 처리
             }
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR :', e);
         return e;
     }
 }
@@ -156,8 +156,6 @@ const calculateAmount = async (req, res) => {
     const entryPrice = req.entryPrice;
 
     try {
-        let maxAllocation = await supabase.selectCommonConfig(API_CODE.MAX_ALLOCATION);
-    
         const riskPercentage = 0.03;
         const stopLossPercentage = 0.015;  // 손절가 계산 비율 (1.5%)
         const minOrderPrice = 5000;      // 최소 주문 금액
@@ -174,6 +172,7 @@ const calculateAmount = async (req, res) => {
         // console.debug(maxLossAmount);
     
         // 3. 최대 매수 금액 계산
+        let maxAllocation = await supabase.selectCommonConfig(API_CODE.MAX_ALLOCATION);
         const maxBuyAmount = accountBalance * maxAllocation;
         // console.debug(maxBuyAmount);
     
@@ -201,18 +200,18 @@ const calculateAmount = async (req, res) => {
         const orderPrice = Math.round(orderQuantity * entryPrice); // 주문 금액
         
         if (orderPrice < minOrderPrice) {
-            console.error('[BUY] INSUFFICIENT BALANCE');
+            console.error('[BUY] INSUFFICIENT BALANCE :', orderPrice);
             return 0; // 주문 불가능
         } 
     
         if (side === API_CODE.BUY) {
-            console.info('[BUY] TARGET ORDER AMOUNT : ', orderPrice);
+            console.info('[BUY] TARGET ORDER AMOUNT :', orderPrice);
             return orderPrice;
         } else if (side === API_CODE.SELL) {
             return orderQuantity;
         }
     } catch(e) {
-        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR :', e);
         return e;
     }
 }
@@ -243,7 +242,7 @@ const handleCutLossByThreshold = async (currentPrice, avgBuyPrice, accountInfo, 
 const executeCutLoss = async (req, res) => {
     const { currentPrice, accountInfo, marketId } = req;
     const targetCoin = accountInfo.find(item => item.currency === marketId);
-    const volume = targetCoin.balance * 0.5; // 보유 수량의 50%
+    const volume = targetCoin.balance;
 
     // 손절 매도에만 isCutLoss를 넘겨줌
     const reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice, isCutLoss : true };

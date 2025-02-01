@@ -7,7 +7,7 @@ const rsi = async (req, res) => {
         const data = await getIndicator(req, res); 
         return res.json(data);
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT] RSI ERROR : ', e.message);
+        console.error('[UPBIT-TRADING-BOT] RSI ERROR :', e.message);
         return res.status(500).json({ error: e.message });
     }
 };
@@ -17,7 +17,7 @@ const bb = async (req, res) => {
         const data = await getIndicator(req, res); 
         return res.json(data);
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT] BB ERROR : ', e.message);
+        console.error('[UPBIT-TRADING-BOT] BB ERROR :', e.message);
         return res.status(500).json({ error: e.message });
     }
 };

@@ -17,7 +17,7 @@ const selectUserById = async (req, res) => {
       .eq('user_id', userId);
   
       if (error) {
-        console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+        console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
         return null;
       }
 
@@ -42,7 +42,7 @@ const updateLoginDtById = async (req, res) => {
     .eq('user_id', userId);
 
     if (error) {
-        console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+        console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
         return null;
     }
     
@@ -87,7 +87,7 @@ const selectTradeInfo = async (req, res) => {
   }
 
   if (error) {
-      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
       return null;
   }
     
@@ -115,7 +115,7 @@ const updateTradeInfo = async (req, res) => {
   .eq('user_id', userId);
 
   if (error) {
-      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
       return null;
   }
   
@@ -139,7 +139,7 @@ const updateTradeInfoUseYn = async (req, res) => {
   .eq('user_id', userId);
 
   if (error) {
-      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
       return null;
   }
   
@@ -164,7 +164,7 @@ const updateTradeInfoRebuyInfo = async (req, res) => {
   .eq('user_id', userId);
 
   if (error) {
-      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
       return null;
   }
   
@@ -184,7 +184,7 @@ const selectWaitTradeInfo = async (req, res) => {
     .eq('user_id', userId);
 
     if (error) {
-      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
       return null;
     }
     
@@ -211,7 +211,7 @@ const updateWaitTradeInfo = async (req, res) => {
   .eq('user_id', userId);
 
   if (error) {
-      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
       return null;
   }
   
@@ -244,7 +244,7 @@ const insertTradeHist = async (req, res) => {
     ]);
 
     if (error) {
-      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
       return null;
     }
 
@@ -271,7 +271,7 @@ const updateCloseYnFromTradeHist = async (req, res) => {
   .eq('close_yn', 'N');
 
   if (error) {
-      console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+      console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
       return null;
   }
   
@@ -295,7 +295,7 @@ const selectCommonConfig = async (req, res) => {
     .single();
 
   if (error) {
-    console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+    console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
     return null;
   }
   
@@ -314,7 +314,7 @@ const selectTradeHistByTradeDt = async (tradeDt) => {
   .single();
 
   if (error) {
-    console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+    console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
     return null;
   }
 
@@ -331,7 +331,7 @@ const selectDailyCalcStatByTradeDt = async (req, res) => {
     .eq('trade_dt', req.tradeDt);
 
   if (error) {
-    console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+    console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
     return null;
   } 
 
@@ -353,7 +353,7 @@ const insertDailyCalcStat = async (req, res) => {
     ]);
 
   if (error) {
-    console.error('[UPBIT-TRADING-BOT][DB] ERROR : ', error);
+    console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
     return null;
   } 
 

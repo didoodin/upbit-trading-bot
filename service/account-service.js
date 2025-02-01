@@ -12,7 +12,7 @@ const getAccounts = async (req, res) => {
         // console.debug('[UPBIT-TRADING-BOT][-ACCOUNT-][', code, '] RES-BODY : ', data);
         return data;
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-ACCOUNT-] ERROR : ', e.message);
+        console.error('[UPBIT-TRADING-BOT][-ACCOUNT-] ERROR :', e.message);
         return e;
     }
 };
