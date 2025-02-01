@@ -125,7 +125,7 @@ const executeTrade = async (req, res) => {
             }
         }
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR :', e);
         require('../utils/interval-manager').stopInterval();
         return e;
     }
@@ -284,7 +284,7 @@ const handleCutLoss = async (req, res) => {
     // 현재가 정보
     const ticker = await getTicker({ markets: ('KRW-' + marketId) });
     const currentPrice = ticker[0].trade_price;
-    console.info('CURRENT PRICE : ', currentPrice);
+    console.info('CURRENT PRICE :', currentPrice);
 
     // 코인 존재 여부 및 목표 가격
     const { target } = await getTargetCoinInfo(accountInfo, marketId);
@@ -332,7 +332,7 @@ const getTargetReached = async (side, currentPrice, avgBuyPrice) => {
     // 현재가에 소수점 존재 시 5자리까지 반올림 처리
     if (targetPrice % 1 !== 0) targetPrice = targetPrice.toFixed(5);
 
-    console.info('[TARGET REACHED] MARKET PRICE : ', currentPrice, ' | TARGET PRICE : ', Number(targetPrice));
+    console.info('TARGET : MARKET PRICE [',currentPrice,'] | TARGET PRICE :[',Number(targetPrice),']');
     return side === API_CODE.BUY ? currentPrice < targetPrice : currentPrice >= targetPrice;
 };
 

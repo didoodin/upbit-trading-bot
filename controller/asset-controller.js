@@ -6,7 +6,7 @@ const accounts = async (req, res) => {
         const data = await getAccounts(req, res); 
         return res.json(data);
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT] ACCOUNT ERROR : ', e.message);
+        console.error('[UPBIT-TRADING-BOT] ACCOUNT ERROR :', e.message);
         return res.json(e);
     }
 };

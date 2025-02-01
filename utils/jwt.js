@@ -28,7 +28,7 @@ const { UPBIT_ACCESS_KEY: ACCESS_KEY, UPBIT_SECRET_KEY: SECRET_KEY } = require('
 
       return authToken;
     } catch (e) {
-      console.error('[UPBIT-TRADING-BOT][-JWT-] ERROR : ', e);
+      console.error('[UPBIT-TRADING-BOT][-JWT-] ERROR :', e);
       return e;
     }
   }

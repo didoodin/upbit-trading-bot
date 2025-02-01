@@ -74,7 +74,7 @@ const getIndicator = async (req, res) => {
 
     return { ma: ma, rsi: rsi, bb: bb };
   } catch (e) {
-    console.error('[UPBIT-TRADING-BOT][-INDICATOR-] ERROR : ', e);
+    console.error('[UPBIT-TRADING-BOT][-INDICATOR-] ERROR :', e);
     return e;
   }
 }
@@ -105,7 +105,7 @@ const makeMA = async (candleList, period) => {
 
     return movingAverages;
   } catch (e) {
-      console.error('[UPBIT-TRADING-BOT][-MA-] ERROR : ', e);
+      console.error('[UPBIT-TRADING-BOT][-MA-] ERROR :', e);
   }
 }
 
@@ -124,7 +124,7 @@ const checkCross = async (candleList, marketId) => {
   const ma15 = await makeMA(candleList.slice(0, 15), 15);
   const ma200 = await makeMA(candleList, 200);
   const diffRate = await calcDiffRate(ma15, ma200);
-  console.info('MA(15)', ma15, '|| MA(200)', ma200, ' -> DIFF RATE : ', diffRate, '%');
+  console.info('MA(15)', ma15, '|| MA(200)', ma200, ' -> DIFF RATE :',diffRate,'%');
 
   const isBTC = marketId === 'BTC';
   return getCross(ma15, ma200, isBTC);
@@ -271,9 +271,9 @@ async function makeRSI(candleList) {
           const rs = upEma / downEma;
           const rsi = 100 - (100 / (1 + rs));
       
-          return rsi;
+          return Math.round(rsi * 10) / 10;
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-RSI-] ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-RSI-] ERROR :', e);
         return e;
     }
 }
@@ -321,16 +321,16 @@ async function makeBB(candleList) {
               bbList.push({
                   type: 'BB',
                   DT: dfDt[i],  // 각 날짜에 해당하는 값
-                  BBH: Number(bandHigh.toFixed(4)), // 상단 밴드
-                  BBM: Number(bbCenter.toFixed(4)), // 중간 밴드
-                  BBL: Number(bandLow.toFixed(4))   // 하단 밴드
+                  BBH: Number(bandHigh.toFixed(5)), // 상단 밴드
+                  BBM: Number(bbCenter.toFixed(5)), // 중간 밴드
+                  BBL: Number(bandLow.toFixed(5))   // 하단 밴드
               });
           }
         }
     
         return bbList[0];
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-BB-] ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-BB-] ERROR :', e);
         console.error(e);
     }
   }

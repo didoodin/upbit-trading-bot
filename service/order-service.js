@@ -95,7 +95,7 @@ const executeOrder = async (req, res) => {
 
             // 매도일 경우, 기존 매수 주문 완료 여부 갱신
             if (type === API_CODE.SELL) {
-                await supabase.updateCloseYnFromTradeHist({ 'market' : data.market });
+                await supabase.updateCloseYnFromTradeHist({ 'market' : tradeInfo.market });
                 console.info('[-ORDER-] TRADE HIST STATUS -> CLOSED');
             }
         } else {
@@ -104,7 +104,7 @@ const executeOrder = async (req, res) => {
 
         return data;
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT] ERROR : ', e.code);
+        console.error('[UPBIT-TRADING-BOT] ERROR :', e.code);
         return e;
     } 
 };
@@ -129,7 +129,7 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
                     console.info('[BUY] TARGET ORDER AMOUNT :', Math.round(accountBalance * 0.6));
                     return Math.round(accountBalance * 0.6);
                 } else {
-                    console.info('[BUY] CALCULATE AMOUNT START :', accountBalance);
+                    console.info('[BUY] CALCULATE AMOUNT START :', Math.round(Number(accountBalance)));
                     return await calculateAmount({ side, accountBalance, entryPrice });
                 }
  
@@ -137,7 +137,7 @@ const checkOrderAmount = async (req, res) => { // side, accountBalance, entryPri
                 return await calculateAmount({ side, accountBalance, entryPrice }); // SELL 조건 처리
             }
     } catch (e) {
-        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR :', e);
         return e;
     }
 }
@@ -156,8 +156,6 @@ const calculateAmount = async (req, res) => {
     const entryPrice = req.entryPrice;
 
     try {
-        let maxAllocation = await supabase.selectCommonConfig(API_CODE.MAX_ALLOCATION);
-    
         const riskPercentage = 0.03;
         const stopLossPercentage = 0.015;  // 손절가 계산 비율 (1.5%)
         const minOrderPrice = 5000;      // 최소 주문 금액
@@ -174,6 +172,7 @@ const calculateAmount = async (req, res) => {
         // console.debug(maxLossAmount);
     
         // 3. 최대 매수 금액 계산
+        let maxAllocation = await supabase.selectCommonConfig(API_CODE.MAX_ALLOCATION);
         const maxBuyAmount = accountBalance * maxAllocation;
         // console.debug(maxBuyAmount);
     
@@ -212,7 +211,7 @@ const calculateAmount = async (req, res) => {
             return orderQuantity;
         }
     } catch(e) {
-        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR : ', e);
+        console.error('[UPBIT-TRADING-BOT][-TRADE-] ERROR :', e);
         return e;
     }
 }
