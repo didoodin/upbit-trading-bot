@@ -3,7 +3,7 @@ const { getTicker } = require('../service/ticker-service');
 const { getAllMarket, getCandle } = require('./market-service');
 const { checkCross, handleCrossEvent, makeRSI, makeBB } = require('../service/indicator-service');
 const { checkSignal } = require('../service/signal-service');
-const { checkOrderAmount, executeOrder, handleCutLossByThreshold } = require('../service/order-service');
+const { checkOrderAmount, executeOrder, handleCutLossByThreshold, executeCutLoss } = require('../service/order-service');
 const supabase = require('../utils/supabase');
 const _ = require('lodash');
 
@@ -70,7 +70,7 @@ const executeTrade = async (req, res) => {
 
                     // 볼린저 밴드 계산
                     const bb = await makeBB(candleList);
-                    console.info('BB : ', bb);
+                    console.info('BB HIGH : ',bb.BBH,'| LOW : ',bb.BBL);
 
                     // 현재가 정보
                     const ticker = await getTicker({ markets: ('KRW-' + marketId) });
