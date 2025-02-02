@@ -335,4 +335,4 @@ async function makeBB(candleList) {
     }
   }
 
-module.exports = { getIndicator, makeMA, checkCross, handleCrossEvent, makeRSI, makeBB };
+module.exports = { getIndicator, makeMA, checkCross, handleCrossEvent, replaceTradeInfo, makeRSI, makeBB };

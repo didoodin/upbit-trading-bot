@@ -93,10 +93,10 @@ const executeOrder = async (req, res) => {
     
             await supabase.insertTradeHist(tradeInfo);
 
-            // 매도일 경우, 기존 매수 주문 완료 여부 갱신
+            // 매도일 경우, 기존 매수 주문 완료 여부 갱신 & 추가 매수 횟수 초기화
             if (type === 'SELL') {
                 await supabase.updateCloseYnFromTradeHist({ 'market' : tradeInfo.market });
-                console.info('[-ORDER-] TRADE HIST STATUS -> CLOSED');
+                await supabase.updateTradeInfoRebuyInfo({ market : tradeInfo.market.replace('KRW-', ''), rebuyCnt : 0, rebuyDt : null });
             }
         } else {
             console.info('[-ORDER-] ORDER FAIL : ', data);
@@ -222,13 +222,14 @@ const calculateAmount = async (req, res) => {
  * @param {*} accountInfo 
  * @param {*} marketId 
  */
-const handleCutLossByThreshold = async (currentPrice, avgBuyPrice, accountInfo, marketId) => {
+const handleCutLossByThreshold = async (currentPrice, avgBuyPrice, accountInfo, tradeInfo) => {
     const threshold = await supabase.selectCommonConfig(API_CODE.CUT_LOSS_THRESHOLD);
     const priceDifference = (avgBuyPrice - currentPrice) / avgBuyPrice;
     const isCutLoss = priceDifference >= threshold;
 
     if (isCutLoss) {
-        await executeCutLoss({ currentPrice, accountInfo, marketId });
+        await executeCutLoss({ currentPrice, accountInfo, marketId : tradeInfo.market });
+        await require('../service/indicator-service').replaceTradeInfo(tradeInfo);
     }
 };
 

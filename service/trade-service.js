@@ -85,7 +85,7 @@ const executeTrade = async (req, res) => {
                     console.info('SIGNAL : [',side,']');
 
                     // 손절 여부 체크 및 진행
-                    if (targetCoin) await handleCutLossByThreshold(currentPrice, avgBuyPrice, accountInfo, marketId);
+                    if (targetCoin) await handleCutLossByThreshold(currentPrice, avgBuyPrice, accountInfo, tradeInfos[i]);
 
                     switch (side) {
                         case API_CODE.BUY:
@@ -137,56 +137,61 @@ const executeTrade = async (req, res) => {
  * 주문 전 사전 체크 (비트코인 하락 여부, 크로스 체크)
  */
 const preOrderCheck = async (req, res) => {
-    let accountInfo = req.accountInfo;
+    try {
+        let accountInfo = req.accountInfo;
 
-    // // 현재 주문 정보 및 대기 주문 정보 조회
-    // const tradeInfo = await supabase.selectTradeInfo({ fixYn : 'N' });
-    // const waitTradeInfo = await supabase.selectWaitTradeInfo();
+        // // 현재 주문 정보 및 대기 주문 정보 조회
+        // const tradeInfo = await supabase.selectTradeInfo({ fixYn : 'N' });
+        // const waitTradeInfo = await supabase.selectWaitTradeInfo();
 
-    // const markets = [...tradeInfo, ...waitTradeInfo].filter(item => item.market !== 'BTC').map(item => 'KRW-' + item.market).join(',');
-    // const tickers = await getTicker({ markets: markets });
+        // const markets = [...tradeInfo, ...waitTradeInfo].filter(item => item.market !== 'BTC').map(item => 'KRW-' + item.market).join(',');
+        // const tickers = await getTicker({ markets: markets });
 
-    // // 거래대금 & 거래량 순위
-    // const tradePriceTop4 = tickers
-    // .map(item => ({
-    //     market: item.market.replace('KRW-', ''),
-    //     acc_trade_price: item.acc_trade_price,
-    //     acc_trade_volume: item.acc_trade_volume
-    //     }))
-    //     .sort((a, b) => {
-    //     if (b.acc_trade_price !== a.acc_trade_price) { return b.acc_trade_price - a.acc_trade_price; }
-    //     return b.acc_trade_volume - a.acc_trade_volume;
-    //     }).slice(0, 4);
+        // // 거래대금 & 거래량 순위
+        // const tradePriceTop4 = tickers
+        // .map(item => ({
+        //     market: item.market.replace('KRW-', ''),
+        //     acc_trade_price: item.acc_trade_price,
+        //     acc_trade_volume: item.acc_trade_volume
+        //     }))
+        //     .sort((a, b) => {
+        //     if (b.acc_trade_price !== a.acc_trade_price) { return b.acc_trade_price - a.acc_trade_price; }
+        //     return b.acc_trade_volume - a.acc_trade_volume;
+        //     }).slice(0, 4);
 
-    // console.info('[** TRADE PRICE & VOLUME TOP4 **]', tradePriceTop4);
+        // console.info('[** TRADE PRICE & VOLUME TOP4 **]', tradePriceTop4);
 
-    // 주문 요청 정보 조회
-    let tradeInfos = await supabase.selectTradeInfo({});
+        // 주문 요청 정보 조회
+        let tradeInfos = await supabase.selectTradeInfo({});
 
-    if (tradeInfos && tradeInfos.length > 0) {
-        for (let i = 0; i < tradeInfos.length; i++) {
-            const marketId = tradeInfos[i].market;
-            const period = tradeInfos[i].period;
+        if (tradeInfos && tradeInfos.length > 0) {
+            for (let i = 0; i < tradeInfos.length; i++) {
+                const marketId = tradeInfos[i].market;
+                const period = tradeInfos[i].period;
 
-            console.info('[UPBIT-TRADING-BOT][-TRADE-][',marketId,']');
+                console.info('[UPBIT-TRADING-BOT][-TRADE-][',marketId,']');
+                console.info(' ------------------------------------------------------------------------------------ ');
+
+                // 캔들 조회
+                const candleList = await getCandle({ minutes: period, market: ('KRW-' + marketId), count: COUNT });
+
+                // 이동평균선 체크 -> 사용 여부 갱신 -> 데드크로스 종목 리턴 -> 손절 매도
+                const cross = await checkCross(candleList, marketId);
+
+                // 비트코인 하락세 시 true 리턴
+                if (marketId === 'BTC') {
+                    if (cross === API_CODE.CROSS.DEAD) return true;
+                } else {
+                    const disableTargetId = await handleCrossEvent(cross, marketId);
+                    if (disableTargetId) await handleCutLossByThreshold({ marketId : disableTargetId });   
+                }
             console.info(' ------------------------------------------------------------------------------------ ');
-
-            // 캔들 조회
-            const candleList = await getCandle({ minutes: period, market: ('KRW-' + marketId), count: COUNT });
-
-            // 이동평균선 체크 -> 사용 여부 갱신 -> 데드크로스 종목 리턴 -> 손절 매도
-            const cross = await checkCross(candleList, marketId);
-
-            // 비트코인 하락세 시 true 리턴
-            if (marketId === 'BTC') {
-                if (cross === API_CODE.CROSS.DEAD) return true;
-            } else {
-                const disableTargetId = await handleCrossEvent(cross, marketId);
-                if (disableTargetId) await handleCutLossByThreshold({ marketId : disableTargetId });   
             }
-        console.info(' ------------------------------------------------------------------------------------ ');
+            console.info(' ==================================================================================== ');
         }
-        console.info(' ==================================================================================== ');
+    } catch (e) {
+        console.error('[UPBIT-TRADING-BOT][-RSI-] ERROR :', e);
+        return e;
     }
 }
 
@@ -211,7 +216,6 @@ const handleBuyOrder = async (reqParam, currentPrice, targetCoin, avgBuyPrice) =
         } else {
             // 추가 매수 여부 체크
             const canRebuy = await handleRebuy(reqParam);
-            if (canRebuy) await executeOrder(reqParam);
         }   
     }
 };
@@ -238,7 +242,7 @@ async function handleRebuy(reqParam) {
         return '';
     }
 
-    console.info('[BUY] EXECUTE ADDITIONAL PURCHASE');
+    await executeOrder(reqParam);
 
     await supabase.updateTradeInfoRebuyInfo({
         market,
@@ -249,7 +253,7 @@ async function handleRebuy(reqParam) {
 
 async function shouldRebuy(tradeInfo) {
     const { parseISO, addMinutes, isAfter } = require('date-fns');
-    if (!tradeInfo.rebuy_cnt) return true;
+    if (!tradeInfo.rebuy_dt) return true;
     const rebuyDt = parseISO(tradeInfo.rebuy_dt);
     return isAfter(new Date(), addMinutes(rebuyDt, 15));
 }
@@ -280,8 +284,6 @@ const handleSellOrder = async (reqParam, accountInfo, currentPrice, marketId) =>
         const volume = targetCoin.balance; // 보유 수량
         reqParam = { market: ('KRW-' + marketId), side: API_CODE.SELL, volume, ord_type: 'market', currentPrice };
 
-        // 추가 매수 횟수 초기화
-        await supabase.updateTradeInfoRebuyInfo({ market : marketId, rebuyCnt : 0, rebuyDt : null });
         return await executeOrder(reqParam);
     }
 };
@@ -302,10 +304,10 @@ const handleCutLoss = async (req, res) => {
     console.info('CURRENT PRICE :', currentPrice);
 
     // 코인 존재 여부 및 목표 가격
-    const { target } = await getTargetCoinInfo(accountInfo, marketId);
+    const { targetCoin } = await getTargetCoinInfo(accountInfo, marketId);
 
-    if (target) {
-        await executeCutLoss(currentPrice, accountInfo, marketId);
+    if (targetCoin.currency) {
+        await executeCutLoss({ currentPrice, accountInfo, marketId });
     }
 }
 
