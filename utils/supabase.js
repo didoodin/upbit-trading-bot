@@ -270,8 +270,6 @@ const updateCloseYnFromTradeHist = async (req, res) => {
   .eq('type', 'BUY')
   .eq('close_yn', 'N');
 
-  console.info(data)
-
   if (error) {
       console.error('[UPBIT-TRADING-BOT][DB] ERROR :', error);
       return null;
